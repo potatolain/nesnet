@@ -1,0 +1,15 @@
+demo/tools/fceux/*
+!demo/tools/fceux/README.md
+demo/tools/nessc/*
+!demo/tools/nessc/README.md
+demo/tools/nintendulatordx/*
+!demo/tools/nintendulatordx/README.md
+demo/tools/readnes3/*
+!demo/tools/readnes3/README.md
+demo/tools/cc65/*
+!demo/tools/cc65/README.md
+*.o
+*.nes
+.vscode
+demo/graphics/processed/*
+!demo/graphics/processed/empty

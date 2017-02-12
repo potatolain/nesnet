@@ -1,0 +1,1 @@
+unsigned char __fastcall__ do_net_stuff(void);
