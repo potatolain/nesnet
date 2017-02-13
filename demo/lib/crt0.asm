@@ -20,7 +20,7 @@ FT_SFX_STREAMS			= 4			;number of sound effects played at once, 1..4
 	.import	__CODE_LOAD__   ,__CODE_RUN__   ,__CODE_SIZE__
 	.import	__RODATA_LOAD__ ,__RODATA_RUN__ ,__RODATA_SIZE__
 	.import NES_MAPPER,NES_PRG_BANKS,NES_CHR_BANKS,NES_MIRRORING
-    .include "lib/zeropage.inc"
+    .include "tools/cc65/asminc/zeropage.inc"
 
 
 
@@ -74,7 +74,7 @@ PPU_MASK_VAR: 		.res 1
 RAND_SEED: 			.res 2
 FT_TEMP: 			.res 3
 
-TEMP: 				.res 11
+TEMP: 				.res 13
 
 PAD_BUF		=TEMP+1
 
@@ -85,6 +85,7 @@ SCRX		=TEMP+5
 SCRY		=TEMP+6
 SRC			=TEMP+7	;word
 DST			=TEMP+9	;word
+PTR2		=TEMP+11
 
 RLE_LOW		=TEMP
 RLE_HIGH	=TEMP+1

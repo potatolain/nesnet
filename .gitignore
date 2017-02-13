@@ -11,5 +11,6 @@ demo/tools/cc65/*
 *.o
 *.nes
 .vscode
+demo/main.s
 demo/graphics/processed/*
 !demo/graphics/processed/empty

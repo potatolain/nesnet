@@ -44,6 +44,10 @@ run: fceux
 nintendulator:
 	$(DEBUG_EMULATOR) test.nes
 
+space_check:
+	$(SPACE_CHECKER) test.nes
+
+
 clean:
 	rm -f *.nes
 	rm -f *.o

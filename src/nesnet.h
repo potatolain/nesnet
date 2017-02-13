@@ -1,1 +1,1 @@
-unsigned char __fastcall__ do_net_stuff(void);
+void __fastcall__ do_net_stuff(unsigned char *pointer);
