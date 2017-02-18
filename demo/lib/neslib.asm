@@ -837,16 +837,18 @@ _pad_poll:
 	dec <TEMP
 	bne @padPollLoop
 
-	inx
-	cpx #3
-	bne @padPollPort
+
+	; FIXME: Un-simplify this. Bytes removed to make us read one byte at a time, but what we really should do is send each byte 3 times from the photon client. (Yes, i'm serious..)
+	;inx
+	;cpx #3
+	;bne @padPollPort
 
 	lda <PAD_BUF
-	cmp <PAD_BUF+1
-	beq @done
-	cmp <PAD_BUF+2
-	beq @done
-	lda <PAD_BUF+1
+	;cmp <PAD_BUF+1
+	;beq @done
+	;cmp <PAD_BUF+2
+	;beq @done
+	;lda <PAD_BUF+1
 
 @done:
 

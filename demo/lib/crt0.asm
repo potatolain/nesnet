@@ -73,8 +73,9 @@ PPU_CTRL_VAR1: 		.res 1
 PPU_MASK_VAR: 		.res 1
 RAND_SEED: 			.res 2
 FT_TEMP: 			.res 3
+DUMMY_BYTES:		.res 3
 
-TEMP: 				.res 13
+TEMP: 				.res 15
 
 PAD_BUF		=TEMP+1
 
@@ -86,6 +87,7 @@ SCRY		=TEMP+6
 SRC			=TEMP+7	;word
 DST			=TEMP+9	;word
 PTR2		=TEMP+11
+MACRO_TEMP	=TEMP+13
 
 RLE_LOW		=TEMP
 RLE_HIGH	=TEMP+1
