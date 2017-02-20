@@ -41,7 +41,6 @@ volatile bool dongs;
 HttpClient http;
 
 volatile byte numLatches;
-// http://cpprograms.net/devnull/time.php
 
 // Headers currently need to be set at init, useful for API keys etc.
 http_header_t headers[] = {
@@ -159,10 +158,18 @@ void ClockNES() {
 /////////////////////////////////////////
 
 void GetNetResponse() {
-    // TODO: How do we cope with this?
-    request.hostname = "cpprograms.net";
-    request.port = 80;
-    request.path = receivedBytes;
+    String fullUrl = String(receivedBytes);
+    int colonPos = fullUrl.indexOf(':');
+    int slashPos = fullUrl.indexOf('/');
+    if (colonPos != -1) {
+        request.hostname = fullUrl.substring(0, colonPos);
+        request.port = fullUrl.substring(colonPos+1, slashPos).toInt();
+        request.path = fullUrl.substring(slashPos);
+    } else {
+        request.port = 80;
+        request.hostname = fullUrl.substring(0, slashPos);
+        request.path = fullUrl.substring(slashPos);
+    }
 
     // The library also supports sending a body with your request:
     //request.body = "{\"key\":\"value\"}";

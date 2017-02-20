@@ -67,7 +67,7 @@ void main(void) {
 		currentPadState = pad_trigger(0);
 		if (currentPadState & PAD_A) {
 			callCount++;
-			http_get("/devnull/time.php", theMessage);
+			http_get("cpprograms.net/devnull/time.php", theMessage);
 			
 			screenBuffer[0] = MSB(NTADR_A(2, 14)) | NT_UPD_HORZ;
 			screenBuffer[1] = LSB(NTADR_A(2, 14));
@@ -88,7 +88,7 @@ void main(void) {
 			set_vram_update(screenBuffer);
 		} else if (currentPadState & PAD_SELECT) {
 			callCount++;
-			http_get("/devnull/word.php", theMessage);
+			http_get("cpprograms.net:80/devnull/word.php?1=22", theMessage);
 			
 			screenBuffer[0] = MSB(NTADR_A(2, 14)) | NT_UPD_HORZ;
 			screenBuffer[1] = LSB(NTADR_A(2, 14));

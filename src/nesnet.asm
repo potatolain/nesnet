@@ -42,17 +42,6 @@
 	URL = PTR3
 	RESPONSE = PTR2
 
-	; Quick and dirty lookup table, so that we can associate a register with the bit to pull out of a byte.
-	/*byte_to_bit_lookup: 
-		.byte %10000000
-		.byte %01000000
-		.byte %00100000
-		.byte %00010000
-		.byte %00001000
-		.byte %00000100
-		.byte %00000010
-		.byte %00000001*/
-
 	byte_to_bit_lookup: 
 		.byte %00000001
 		.byte %00000010
@@ -71,7 +60,7 @@
 		sta URL
 		stx URL+1
 
-		; Kinda junky "are you there" handshake - ideal is more complex. Once we have sending bytes pretty secured...
+		; TODO: Make a real handshake so we stop triggering the stupid powerpak
 		.repeat 8
 			trigger_latch
 		.endrepeat
