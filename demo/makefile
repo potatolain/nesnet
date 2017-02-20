@@ -33,7 +33,7 @@ lib/crt0.o: lib/crt0.asm ../src/nesnet.asm ../src/nesnet.h
 main.o: main.s
 	$(MAIN_ASM_COMPILER) main.s
 
-test.nes: lib/* *.s *.o
+test.nes: lib/crt0.o main.o 
 	$(MAIN_LINKER) -C $(CONFIG_FILE) -o test.nes lib/crt0.o main.o lib/runtime.lib
 
 fceux:
