@@ -6,19 +6,34 @@
 #define NES_DATA D3                                 // Yellow wire
 #define PHOTON_LIGHT 7
 #define LATCH_THRESHOLD 20
+#define FETCH_LATCH_THRESHOLD 80
 
 volatile unsigned char latchedByte;                 // Controller press byte value = one letter in tweet
 volatile unsigned char bitCount;                    // A single LDA $4017 (get one bit from "controller press")
 volatile unsigned char byteCount;                   // How many bytes have already been printed
 volatile unsigned char bytesToTransfer;             // How many bytes are left to print
+volatile unsigned char incomingBitCount;
+volatile unsigned char incomingByteCount;
 
 unsigned char tweetData[192];                       // Array that will hold 192 hex values representing tweet data      
+unsigned char receivedBytes[100];
 volatile int nesClockCount;
 volatile int lastNesClockCount;
 volatile unsigned long currentTime;
 volatile unsigned long lastTime;
+unsigned long lastBitReset = 0;
 volatile bool isSendingBytes = 0;
 volatile bool readyToSendBytes = 0;
+volatile bool hasReceivedBytes = 0;
+volatile bool hasGottenHandshake = 0;
+volatile bool receivingData = 0;
+volatile bool finishedReceivingData = 0;
+volatile bool currentBit = 0;
+volatile unsigned char currentByte = 0;
+volatile bool gazornenplat = 0;
+volatile unsigned long lastLoadBearingLatch = 0;
+volatile unsigned long experiment;
+volatile unsigned long a, b;
 
 volatile byte numLatches;
 
@@ -35,7 +50,14 @@ void setupData() {
     lastTime = currentTime;
     latchedByte = 0;
     bitCount = 0;
-    
+    finishedReceivingData = 0;
+    incomingBitCount = 0;
+    incomingByteCount = 0;
+    currentByte = 0;
+    lastLoadBearingLatch = 0;
+    currentBit = 0;
+    receivingData = false;
+
     bytesToTransfer = 13;
     tweetData[0] = 0;
     tweetData[1] = 0;
@@ -50,13 +72,21 @@ void setupData() {
     tweetData[10] = 'I';
     tweetData[11] = 'N';
     tweetData[12] = 'S';
+    
+    static int i;
+    for (i = 0; i < 100; i++)
+        receivedBytes[i] = 0;
+        
+    experiment = 0;
+        
+        
    
 }
 
 void setup() {
     
     // Don't interpret NES startup/etc as a handshake.. just wait on startup for a lil bit.
-    delay(5000);
+    delay(2000);
     
 
     pinMode(NES_CLOCK, INPUT);                      // Set NES controller red wire (clock) as an input
@@ -69,6 +99,8 @@ void setup() {
     pinMode(PHOTON_LIGHT, OUTPUT);                             // Turn off the Photon's on-board LED
     digitalWrite(PHOTON_LIGHT, LOW);                           //
     
+    Particle.variable("received", receivedBytes, STRING);
+    
     setupData();
 }
 
@@ -76,24 +108,15 @@ void setup() {
 //////////////////////////////////////////
 
 
-void loop() {                                       // 'Round and 'round we go       
+void loop() {                                       // 'Round and 'round we go    
+    if (finishedReceivingData == true && gazornenplat == false) {
+        char buffer[150];
+        sprintf(buffer, "NES Debug data received: %u, %u, %u, %u in %lu: %s", receivedBytes[0], receivedBytes[1], receivedBytes[2], receivedBytes[3], b-a, receivedBytes);
+        Particle.publish("dataReceived", buffer);
+        gazornenplat = true;
+
+    }
 }                                        
-
-
-//////////////////////////////////////////
-
-
-void myHandler(String event, String data) {
-    char inputStr[193];
-    data.toCharArray(inputStr, 193);
-    tweetData[0] = 0xE8;
-    static int i=1;
-    for(i=1; i<192; i++) { tweetData[i] = inputStr[i]; }
-    memset(&inputStr[0], 0, sizeof(inputStr));
-    bytesToTransfer = 192;
-    byteCount = 0;
-}
-
 
 ////////////////////////////////////////
 
@@ -112,7 +135,7 @@ void ClockNES() {
 
 void LatchNES() {
     
-    if (!isSendingBytes) {
+    if (!hasGottenHandshake) {
         readyToSendBytes = false;
         if (currentTime - lastTime < LATCH_THRESHOLD) {
             numLatches++;
@@ -120,9 +143,44 @@ void LatchNES() {
             numLatches = 0;
         }
         if (numLatches >= 7) {
-            isSendingBytes = true;
+            hasGottenHandshake = true;
+            gazornenplat = false;
+            
+            // blah
+            receivingData = true;
+            currentBit = 0;
+            currentByte = 0;
+            //
+            
             digitalWrite(PHOTON_LIGHT, HIGH);
             setupData();
+        }
+    } else if (hasGottenHandshake && !receivingData) {
+        receivingData = true; // Only purpose of this is to wait until the next latch signal to start doing something.
+        currentByte = 0;
+        currentBit = 1; // TODO: Why is this necessary?
+        a = micros();
+    } else if (receivingData && !finishedReceivingData) {
+        if (micros() - lastLoadBearingLatch < FETCH_LATCH_THRESHOLD) {
+            // If we get a second latch signal before our next expected one, this signifies a one.
+            // If we don't, currentBit will keep stay at zero, and go again.
+            currentBit = 1;
+        } else {
+            currentByte += (currentBit << incomingBitCount);
+            incomingBitCount++;
+            if (incomingBitCount == 8) {
+                incomingBitCount = 0;
+                receivedBytes[incomingByteCount] = currentByte;
+                incomingByteCount++;
+                if (currentByte == 0 && incomingByteCount > 1) { // TODO: Is this ok?
+                    finishedReceivingData = true;
+                    b = micros();
+                }
+                currentByte = 0;
+                
+            }
+            currentBit = 0;
+            lastLoadBearingLatch = micros();
         }
 
     } else { 
@@ -132,7 +190,7 @@ void LatchNES() {
             digitalWrite(NES_DATA, latchedByte & 0x01);
             latchedByte >>= 1;
             bitCount = 0;
-            isSendingBytes = false;
+            hasGottenHandshake = false;
             readyToSendBytes = false;
             digitalWrite(PHOTON_LIGHT, LOW);
         } else {
@@ -145,4 +203,5 @@ void LatchNES() {
     }
     lastTime = currentTime;
     currentTime = micros();
+    
 }
