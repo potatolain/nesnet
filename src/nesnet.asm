@@ -1,12 +1,10 @@
 .feature c_comments
 
-.export _do_net_stuff
+; Note: Since ca65 is kind of a pain, all exports are at the bottom. 
+; If you really want to see what you can do though, the details should all be in nesnet.h :)
 
-.macro store thing, place
-	lda #thing
-	sta place
-.endmacro
-
+; TODO: macros cannot be placed in scopes - find a way to make these not risk clashing with someone else's stuff
+; Maybe as simple as HttpLib_phy and HttpLib_ply, etc. Would be nice if there were a cleaner way though.
 .macro phy
 	sta MACRO_TEMP
 	tya
@@ -19,6 +17,18 @@
 	tay
 	lda MACRO_TEMP
 .endmacro
+.macro phx
+	sta MACRO_TEMP
+	txa
+	pha
+	lda MACRO_TEMP
+.endmacro
+.macro plx
+	sta MACRO_TEMP
+	pla
+	tax
+	lda MACRO_TEMP
+.endmacro
 
 .macro trigger_latch
 	lda #1
@@ -27,120 +37,155 @@
 	sta $4016
 .endmacro
 
-_do_net_stuff: 
-	sta PTR2
-	stx PTR2+1
+.scope HttpLib ; Use a separate scope to encapsulate some variables we use.
 
-	; Seed dummy bytes with data.. eventually we'll want this to be a string.
-	lda #'C'
-	sta DUMMY_BYTES
-	lda #'A'
-	sta DUMMY_BYTES+1
-	lda #'T'
-	sta DUMMY_BYTES+2
+	URL = PTR3
+	RESPONSE = PTR2
 
+	; Quick and dirty lookup table, so that we can associate a register with the bit to pull out of a byte.
+	/*byte_to_bit_lookup: 
+		.byte %10000000
+		.byte %01000000
+		.byte %00100000
+		.byte %00010000
+		.byte %00001000
+		.byte %00000100
+		.byte %00000010
+		.byte %00000001*/
 
-	; Kinda junky "are you there" handshake - ideal is more complex. Once we have sending bytes pretty secured...
-	.repeat 8
-		trigger_latch
-	.endrepeat
-	
-	; Dumb noop loop to waste some time before polling the pad yet again.
-	; TODO: This is probably overzealous
-	ldy #0
-	ldx #0
-	@loop_wait:
-		nop
-		iny
-		cpy #0
-		bne @loop_wait
-		inx
-		cpx #120
-		bne @loop_wait
+	byte_to_bit_lookup: 
+		.byte %00000001
+		.byte %00000010
+		.byte %00000100
+		.byte %00001000
+		.byte %00010000
+		.byte %00100000
+		.byte %01000000
+		.byte %10000000
 
-; ========== START EXTREMELY TIME SENSITIVE CODE ==========
+	get: 
+		sta RESPONSE
+		stx RESPONSE+1
 
-	; If you change anything in here, be very sure all code paths take roughly the same amount of time, and 
-	; the photon firmware is adjusted if it has to take any longer. Also realize any changes will have a serious
-	; impact on the speed of up/down, so BE CAREFUL. You have been warned.
+		jsr popax
+		sta URL
+		stx URL+1
 
-	; Okay, time to send some data over.
-	trigger_latch ; consider this "priming" the string...
-	.define TESTSTRING "/devnull/time.php"
-	.repeat .strlen(TESTSTRING), J
-	.repeat 8, I ; FIXME: lazy assed crap one byte implementation
-		trigger_latch
-
-		.scope .ident(.concat("derrup", .string(I), .string(J))) ; Hack to shut up the local @things
-			lda #(.strat(TESTSTRING, J) >> I)
-			and #1
-			cmp #0
-			beq @zero
-				trigger_latch
-				jmp @after_data
-			@zero: 
-				nop
-				nop
-				nop
-				nop
-				nop
-				nop
-				jmp @after_data ; Keeping things in sync
-			@after_data:
-			ldx #0
-			@loop:
-				nop
-				inx
-				cpx #150
-				bne @loop
-		.endscope
-
-	.endrepeat
-	.endrepeat
-
-	; Finally, send a 0 byte
-	.repeat 8, J
-		.scope .ident(.concat("derrup", .string(J))) ; Hack to shut up the local @things
+		; Kinda junky "are you there" handshake - ideal is more complex. Once we have sending bytes pretty secured...
+		.repeat 8
 			trigger_latch
+		.endrepeat
+		
+		; Dumb noop loop to waste some time before polling the pad yet again.
+		; TODO: This is probably overzealous
+		ldy #0
+		ldx #0
+		@loop_wait:
+			nop
+			iny
+			cpy #0
+			bne @loop_wait
+			inx
+			cpx #120
+			bne @loop_wait
+
+	; ========== START EXTREMELY TIME SENSITIVE CODE ==========
+
+		; If you change anything in here, be very sure all code paths take roughly the same amount of time, and 
+		; the photon firmware is adjusted if it has to take any longer. Also realize any changes will have a serious
+		; impact on the speed of up/down, so BE CAREFUL. You have been warned.
+
+		; Numbers on the left are timings in clock cycles, where applicable. 1 clock cycle ~= 559ns on ntsc
+
+		; Okay, time to send some data over.
+		ldy #0
+		@string_loop:
+			ldx #0
+			@byte_loop:
+
+/* 5-6 */		lda (URL), y
+/* 2   */		cmp #0
+/* 2   */		beq @break_loop
+/* 4-5 */		and byte_to_bit_lookup, x ; Get the bit we're looking for from a simple lookup table
+
+/* 2   */		cmp #0
+/* 2   */		beq @zero 			; Timing note: adds 1-2 if it jumps to zero.
+/* 12  */			trigger_latch
+					trigger_latch
+/* 3   */			jmp @after_data
+				@zero: 
+/* 1-2 */			; From branch
+/* 12 */			trigger_latch
+/* 2 */				nop
+/* 2 */				nop
+/* 2 */				nop
+/* 2 */				nop
+/* 2 */				nop
+/* 2 */				nop
+/* 3 */				jmp @after_data ; Keeping things in sync
+				@after_data:
+				phx
 				ldx #0
 				@loop:
 					nop
 					inx
 					cpx #150
 					bne @loop
-		.endscope
-	.endrepeat
+				plx
+				inx
+				cpx #8
+				bne @byte_loop
+			iny
+			cpy #254
+			bne @string_loop ; TODO: Allow for more than 255 chars
+		@break_loop:
 
-; ========== END TIME SENSITIVE SECTION ==========
+		; Finally, send a 0 byte
+		.repeat 8, J ; TODO: This could be a loop?
+			.scope .ident(.concat("derrup", .string(J))) ; Hack to shut up the local @things
+				trigger_latch
+					ldx #0
+					@loop_0:
+						nop
+						inx
+						cpx #150
+						bne @loop_0
+			.endscope
+		.endrepeat
+
+	; ========== END TIME SENSITIVE SECTION ==========
 
 
 
-	@loop_zero:
-		lda #1
-		jsr _pad_poll ; use the c function to get the pad state. However, we want the exact state, in PAD_STATE
-		lda <(PAD_STATE+1)
-		cmp #0
-		beq @loop_zero
+		@loop_zero:
+			lda #1
+			jsr _pad_poll ; use the c function to get the pad state. However, we want the exact state, in PAD_STATE
+			lda <(PAD_STATE+1)
+			cmp #0
+			beq @loop_zero
 
 
-	; a is already PAD_STATE, but we want to ignore the first char, (used to adjust timing) so do nothing with it.
-	ldy #0
+		; a is already PAD_STATE, but we want to ignore the first char, (used to adjust timing) so do nothing with it.
+		ldy #0
 
-	@loop: 
-		phy
-		lda #1
-		jsr _pad_poll
-		ply
-		lda <(PAD_STATE+1)
-		cmp #0
-		beq @after_data
-		sta (PTR2), y
-		iny
-		jmp @loop
+		@loop: 
+			phy
+			lda #1
+			jsr _pad_poll
+			ply
+			lda <(PAD_STATE+1)
+			cmp #0
+			beq @after_data
+			sta (RESPONSE), y
+			iny
+			jmp @loop
 
-	@after_data:
-	lda #0
-	sta (PTR2), y ; null terminate the string...
+		@after_data:
+		lda #0
+		sta (RESPONSE), y ; null terminate the string...
 
-	
-	rts
+		
+		rts
+.endscope
+
+.export _http_get = HttpLib::get

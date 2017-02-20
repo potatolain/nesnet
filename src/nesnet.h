@@ -1,1 +1,1 @@
-void __fastcall__ do_net_stuff(unsigned char *pointer);
+void __fastcall__ http_get(unsigned char* url, unsigned char *buffer);

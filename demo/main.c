@@ -67,7 +67,7 @@ void main(void) {
 		currentPadState = pad_trigger(0);
 		if (currentPadState & PAD_A) {
 			callCount++;
-			do_net_stuff(theMessage);
+			http_get("/devnull/time.php", theMessage);
 			
 			screenBuffer[0] = MSB(NTADR_A(2, 14)) | NT_UPD_HORZ;
 			screenBuffer[1] = LSB(NTADR_A(2, 14));
@@ -86,6 +86,19 @@ void main(void) {
 			screenBuffer[19] = NT_UPD_EOF;
 
 			set_vram_update(screenBuffer);
+		} else if (currentPadState & PAD_SELECT) {
+			callCount++;
+			http_get("/devnull/word.php", theMessage);
+			
+			screenBuffer[0] = MSB(NTADR_A(2, 14)) | NT_UPD_HORZ;
+			screenBuffer[1] = LSB(NTADR_A(2, 14));
+			screenBuffer[2] = 16u;
+			for (i = 0u; i < 16u; i++) 
+				screenBuffer[i+3u] = theMessage[i]-0x20;
+			screenBuffer[19] = NT_UPD_EOF;
+
+			set_vram_update(screenBuffer);
+
 		} else {
 			set_vram_update(NULL);
 		}

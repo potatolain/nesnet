@@ -9,7 +9,7 @@
 #define NES_DATA D3                                 // Yellow wire
 #define PHOTON_LIGHT 7
 #define LATCH_THRESHOLD 20
-#define FETCH_LATCH_THRESHOLD 80
+#define FETCH_LATCH_THRESHOLD 40
 
 volatile unsigned char latchedByte;                 // Controller press byte value = one letter in tweet
 volatile unsigned char bitCount;                    // A single LDA $4017 (get one bit from "controller press")
@@ -137,7 +137,7 @@ void loop() {                                       // 'Round and 'round we go
         // Skip the first null byte 
         response.body.getBytes(&tweetData[5], min(response.body.length()+1, 192));
         tweetData[4] = ' '; // Add a garbage byte before to be ignored.
-        Particle.publish("moreData", response.body);
+        Particle.publish("moreData", receivedBytes);
         bytesToTransfer = response.body.length() + 5;
         dongs = true;
 
