@@ -68,10 +68,6 @@ void main(void) {
 		if (currentPadState & PAD_A) {
 			callCount++;
 			do_net_stuff(theMessage);
-
-			theMessage[7] = ' ';
-			theMessage[8] = ':';
-			theMessage[9] = callCount+0x30;
 			
 			screenBuffer[0] = MSB(NTADR_A(2, 14)) | NT_UPD_HORZ;
 			screenBuffer[1] = LSB(NTADR_A(2, 14));

@@ -1,3 +1,6 @@
+// This #include statement was automatically added by the Particle IDE.
+#include "HttpClient.h"
+
 // nesnet Particle Photon firmware
 // Heavily based on the connectedNES driver by hxlnt
 
@@ -16,7 +19,7 @@ volatile unsigned char incomingBitCount;
 volatile unsigned char incomingByteCount;
 
 unsigned char tweetData[192];                       // Array that will hold 192 hex values representing tweet data      
-unsigned char receivedBytes[100];
+char receivedBytes[100];
 volatile int nesClockCount;
 volatile int lastNesClockCount;
 volatile unsigned long currentTime;
@@ -34,9 +37,20 @@ volatile bool gazornenplat = 0;
 volatile unsigned long lastLoadBearingLatch = 0;
 volatile unsigned long experiment;
 volatile unsigned long a, b;
+volatile bool dongs;
+HttpClient http;
 
 volatile byte numLatches;
+// http://cpprograms.net/devnull/time.php
 
+// Headers currently need to be set at init, useful for API keys etc.
+http_header_t headers[] = {
+    { "Accept" , "*/*"},
+    { NULL, NULL } // NOTE: Always terminate headers will NULL
+};
+
+http_request_t request;
+http_response_t response;
 
 //////////////////////////////////////////
 
@@ -72,6 +86,7 @@ void setupData() {
     tweetData[10] = 'I';
     tweetData[11] = 'N';
     tweetData[12] = 'S';
+    dongs = false;
     
     static int i;
     for (i = 0; i < 100; i++)
@@ -87,6 +102,7 @@ void setup() {
     
     // Don't interpret NES startup/etc as a handshake.. just wait on startup for a lil bit.
     delay(2000);
+    Serial.begin(9600);
     
 
     pinMode(NES_CLOCK, INPUT);                      // Set NES controller red wire (clock) as an input
@@ -114,6 +130,17 @@ void loop() {                                       // 'Round and 'round we go
         sprintf(buffer, "NES Debug data received: %u, %u, %u, %u in %lu: %s", receivedBytes[0], receivedBytes[1], receivedBytes[2], receivedBytes[3], b-a, receivedBytes);
         Particle.publish("dataReceived", buffer);
         gazornenplat = true;
+        
+
+    } else if (finishedReceivingData && !dongs) {
+        GetNetResponse();
+        // Skip the first null byte 
+        response.body.getBytes(&tweetData[5], min(response.body.length()+1, 192));
+        tweetData[4] = ' '; // Add a garbage byte before to be ignored.
+        Particle.publish("moreData", response.body);
+        bytesToTransfer = response.body.length() + 5;
+        dongs = true;
+
 
     }
 }                                        
@@ -129,6 +156,20 @@ void ClockNES() {
     }
 }
 
+/////////////////////////////////////////
+
+void GetNetResponse() {
+    // TODO: How do we cope with this?
+    request.hostname = "cpprograms.net";
+    request.port = 80;
+    request.path = receivedBytes;
+
+    // The library also supports sending a body with your request:
+    //request.body = "{\"key\":\"value\"}";
+
+    // Get request
+    http.get(request, response, headers);
+}
     
 /////////////////////////////////////////
 
@@ -183,7 +224,7 @@ void LatchNES() {
             lastLoadBearingLatch = micros();
         }
 
-    } else { 
+    } else if (dongs) { 
         readyToSendBytes = true;
         if (byteCount == bytesToTransfer) {
             latchedByte = 0xFF;

@@ -40,7 +40,7 @@ _do_net_stuff:
 	sta DUMMY_BYTES+2
 
 
-	; Kinda junky "are you there" handshake - ideal is more complex
+	; Kinda junky "are you there" handshake - ideal is more complex. Once we have sending bytes pretty secured...
 	.repeat 8
 		trigger_latch
 	.endrepeat
@@ -48,12 +48,14 @@ _do_net_stuff:
 	; Dumb noop loop to waste some time before polling the pad yet again.
 	; TODO: This is probably overzealous
 	ldy #0
+	ldx #0
 	@loop_wait:
-		.repeat 120
-			nop
-		.endrepeat
+		nop
 		iny
 		cpy #0
+		bne @loop_wait
+		inx
+		cpx #120
 		bne @loop_wait
 
 ; ========== START EXTREMELY TIME SENSITIVE CODE ==========
@@ -64,7 +66,7 @@ _do_net_stuff:
 
 	; Okay, time to send some data over.
 	trigger_latch ; consider this "priming" the string...
-	.define TESTSTRING "What kind of poke?"
+	.define TESTSTRING "/devnull/time.php"
 	.repeat .strlen(TESTSTRING), J
 	.repeat 8, I ; FIXME: lazy assed crap one byte implementation
 		trigger_latch
@@ -85,9 +87,6 @@ _do_net_stuff:
 				nop
 				jmp @after_data ; Keeping things in sync
 			@after_data:
-			/*.repeat 40
-				nop
-			.endrepeat*/
 			ldx #0
 			@loop:
 				nop
@@ -124,10 +123,8 @@ _do_net_stuff:
 		beq @loop_zero
 
 
-	; a is already PAD_STATE, so grab it.
+	; a is already PAD_STATE, but we want to ignore the first char, (used to adjust timing) so do nothing with it.
 	ldy #0
-	sta (PTR2), y
-	iny
 
 	@loop: 
 		phy
