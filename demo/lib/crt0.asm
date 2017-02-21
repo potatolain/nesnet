@@ -74,7 +74,7 @@ PPU_MASK_VAR: 		.res 1
 RAND_SEED: 			.res 2
 FT_TEMP: 			.res 3
 
-TEMP: 				.res 17
+TEMP: 				.res 11
 
 PAD_BUF		=TEMP+1
 
@@ -85,15 +85,13 @@ SCRX		=TEMP+5
 SCRY		=TEMP+6
 SRC			=TEMP+7	;word
 DST			=TEMP+9	;word
-PTR2		=TEMP+11
-PTR3		=TEMP+13
-MACRO_TEMP	=TEMP+15
 
 RLE_LOW		=TEMP
 RLE_HIGH	=TEMP+1
 RLE_TAG		=TEMP+2
 RLE_BYTE	=TEMP+3
 
+.include "../src/nesnet_zp.asm"
 
 
 .segment "HEADER"

@@ -39,9 +39,6 @@
 
 .scope HttpLib ; Use a separate scope to encapsulate some variables we use.
 
-	URL = PTR3
-	RESPONSE = PTR2
-
 	byte_to_bit_lookup: 
 		.byte %00000001
 		.byte %00000010
