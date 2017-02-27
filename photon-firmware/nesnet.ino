@@ -10,26 +10,27 @@
 #define PHOTON_LIGHT 7
 #define LATCH_THRESHOLD 20
 #define FETCH_LATCH_THRESHOLD 40
+#define HANDSHAKE_2_WAIT_TIME 0
 
-volatile unsigned char latchedByte;                 // Controller press byte value = one letter in tweet
-volatile unsigned char bitCount;                    // A single LDA $4017 (get one bit from "controller press")
-volatile unsigned int byteCount;                   // How many bytes have already been printed
-volatile unsigned int bytesToTransfer;             // How many bytes are left to print
-volatile unsigned char incomingBitCount;
-volatile unsigned int incomingByteCount;
-volatile unsigned char byteRepeatCount;
+volatile unsigned char latchedByte = 0;                 // Controller press byte value = one letter in tweet
+volatile unsigned char bitCount = 0;                    // A single LDA $4017 (get one bit from "controller press")
+volatile unsigned int byteCount = 0;                   // How many bytes have already been printed
+volatile unsigned int bytesToTransfer = 0;             // How many bytes are left to print
+volatile unsigned char incomingBitCount = 0;
+volatile unsigned int incomingByteCount = 0;
 
 unsigned char tweetData[550];                       // Array that will hold 192 hex values representing tweet data      
 char receivedBytes[100];
-volatile int nesClockCount;
-volatile int lastNesClockCount;
-volatile unsigned long currentTime;
-volatile unsigned long lastTime;
+volatile int nesClockCount = 0;
+volatile int lastNesClockCount = 0;
+volatile unsigned long currentTime = 0;
+volatile unsigned long lastTime = 0;
 unsigned long lastBitReset = 0;
 volatile bool isSendingBytes = 0;
 volatile bool readyToSendBytes = 0;
 volatile bool hasReceivedBytes = 0;
 volatile bool hasGottenHandshake = 0;
+volatile bool hasGottenHandshake1 = 0;
 volatile bool receivingData = 0;
 volatile bool finishedReceivingData = 0;
 volatile bool currentBit = 0;
@@ -38,10 +39,10 @@ volatile bool gazornenplat = 0;
 volatile unsigned long lastLoadBearingLatch = 0;
 volatile unsigned long experiment;
 volatile unsigned long a, b;
-volatile bool dongs;
+volatile bool dongs = 0;
 HttpClient http;
 
-volatile byte numLatches;
+volatile byte numLatches = 0;
 
 // Headers currently need to be set at init, useful for API keys etc.
 http_header_t headers[] = {
@@ -138,7 +139,7 @@ void loop() {                                       // 'Round and 'round we go
         // Skip the first null byte 
         response.body.getBytes(&tweetData[5], min(response.body.length()+1, 512));
         tweetData[4] = ' '; // Add a garbage byte before to be ignored.
-        Particle.publish("moreData", receivedBytes);
+        Particle.publish("requestUrl", receivedBytes);
         bytesToTransfer = min(response.body.length(), 511) + 5;
         dongs = true;
 
