@@ -77,8 +77,8 @@
 
 	; ========== START EXTREMELY TIME SENSITIVE CODE ==========
 
-		; If you change anything in here, be very sure all code paths take roughly the same amount of time, and 
-		; the photon firmware is adjusted if it has to take any longer. Also realize any changes will have a serious
+		; If you change anything in here, be ready to adjust the photon firmware to match.
+		; Also realize any changes will have a serious
 		; impact on the speed of up/down, so BE CAREFUL. You have been warned.
 
 		; Numbers on the left are timings in clock cycles, where applicable. 1 clock cycle ~= 559ns on ntsc
@@ -96,8 +96,8 @@
 
 /* 2   */		cmp #0
 /* 2   */		beq @zero 			; Timing note: adds 1-2 if it jumps to zero.
+/* 12  */			trigger_latch ; Putting these right next to eachother makes it easier to determine what is/isn't a match.
 /* 12  */			trigger_latch
-					trigger_latch
 /* 3   */			jmp @after_data
 				@zero: 
 /* 1-2 */			; From branch
@@ -145,7 +145,7 @@
 
 		@loop_zero:
 			lda #1
-			jsr _pad_poll ; use the c function to get the pad state. However, we want the exact state, in PAD_STATE
+			jsr get_pad_values ; use the c function to get the pad state. However, we want the exact state, in PAD_STATE
 			lda <(PAD_STATE+1)
 			cmp #0
 			beq @loop_zero
@@ -157,13 +157,16 @@
 		@loop: 
 			phy
 			lda #1
-			jsr _pad_poll
+			jsr get_pad_values
 			ply
 			lda <(PAD_STATE+1)
 			cmp #0
 			beq @after_data
 			sta (RESPONSE), y
 			iny
+			cpy #0
+			bne @loop
+			inc RESPONSE+1
 			jmp @loop
 
 		@after_data:
@@ -173,5 +176,48 @@
 		
 		rts
 .endscope
+
+get_pad_values: 
+
+	tay
+	ldx #0
+
+@padPollPort:
+
+	lda #1
+	sta CTRL_PORT1
+	lda #0
+	sta CTRL_PORT1
+	lda #8
+	sta <TEMP
+
+@padPollLoop:
+
+	lda CTRL_PORT1,y
+	lsr a
+	ror <PAD_BUF,x
+	dec <TEMP
+	bne @padPollLoop
+
+
+	; TODO: Do we want to do triple posts of chars, then read them 3 times? Should see how consistent we can get it without, as this will slow things down a lot.
+	; Alternatively, maybe we let the user choose?
+	;inx
+	;cpx #3
+	;bne @padPollPort
+
+	lda <PAD_BUF
+	;cmp <PAD_BUF+1
+	;beq @done
+	;cmp <PAD_BUF+2
+	;beq @done
+	;lda <PAD_BUF+1
+
+@done:
+
+	sta <PAD_STATE,y
+
+	rts
+
 
 .export _http_get = HttpLib::get

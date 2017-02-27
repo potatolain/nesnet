@@ -14,3 +14,17 @@ demo/tools/cc65/*
 demo/main.s
 demo/graphics/processed/*
 !demo/graphics/processed/empty
+
+forum-browser/tools/fceux/*
+!forum-browser/tools/fceux/README.md
+forum-browser/tools/nessc/*
+!forum-browser/tools/nessc/README.md
+forum-browser/tools/nintendulatordx/*
+!forum-browser/tools/nintendulatordx/README.md
+forum-browser/tools/readnes3/*
+!forum-browser/tools/readnes3/README.md
+forum-browser/tools/cc65/*
+!forum-browser/tools/cc65/README.md
+forum-browser/main.s
+forum-browser/graphics/processed/*
+!forum-browser/graphics/processed/empty

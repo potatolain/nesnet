@@ -13,12 +13,13 @@
 
 volatile unsigned char latchedByte;                 // Controller press byte value = one letter in tweet
 volatile unsigned char bitCount;                    // A single LDA $4017 (get one bit from "controller press")
-volatile unsigned char byteCount;                   // How many bytes have already been printed
-volatile unsigned char bytesToTransfer;             // How many bytes are left to print
+volatile unsigned int byteCount;                   // How many bytes have already been printed
+volatile unsigned int bytesToTransfer;             // How many bytes are left to print
 volatile unsigned char incomingBitCount;
-volatile unsigned char incomingByteCount;
+volatile unsigned int incomingByteCount;
+volatile unsigned char byteRepeatCount;
 
-unsigned char tweetData[192];                       // Array that will hold 192 hex values representing tweet data      
+unsigned char tweetData[550];                       // Array that will hold 192 hex values representing tweet data      
 char receivedBytes[100];
 volatile int nesClockCount;
 volatile int lastNesClockCount;
@@ -108,13 +109,14 @@ void setup() {
     pinMode(NES_LATCH, INPUT);                      // Set NES controller orange wire (latch) as an input
     pinMode(NES_DATA, OUTPUT);                      // Set NES controller yellow wire (data) as an output
     
-    attachInterrupt(NES_CLOCK, ClockNES, FALLING);  // When NES clock ends, execute ClockNES
-    attachInterrupt(NES_LATCH, LatchNES, RISING);   // When NES latch fires, execure LatchNES
+    attachInterrupt(NES_CLOCK, ClockNES, FALLING, 12);  // When NES clock ends, execute ClockNES
+    attachInterrupt(NES_LATCH, LatchNES, RISING, 13);   // When NES latch fires, execure LatchNES
     
     pinMode(PHOTON_LIGHT, OUTPUT);                             // Turn off the Photon's on-board LED
     digitalWrite(PHOTON_LIGHT, LOW);                           //
     
     Particle.variable("received", receivedBytes, STRING);
+    Particle.variable("response", &tweetData[5], STRING);
     
     setupData();
 }
@@ -125,7 +127,7 @@ void setup() {
 
 void loop() {                                       // 'Round and 'round we go    
     if (finishedReceivingData == true && gazornenplat == false) {
-        char buffer[150];
+        char buffer[256];
         sprintf(buffer, "NES Debug data received: %u, %u, %u, %u in %lu: %s", receivedBytes[0], receivedBytes[1], receivedBytes[2], receivedBytes[3], b-a, receivedBytes);
         Particle.publish("dataReceived", buffer);
         gazornenplat = true;
@@ -134,10 +136,10 @@ void loop() {                                       // 'Round and 'round we go
     } else if (finishedReceivingData && !dongs) {
         GetNetResponse();
         // Skip the first null byte 
-        response.body.getBytes(&tweetData[5], min(response.body.length()+1, 192));
+        response.body.getBytes(&tweetData[5], min(response.body.length()+1, 512));
         tweetData[4] = ' '; // Add a garbage byte before to be ignored.
         Particle.publish("moreData", receivedBytes);
-        bytesToTransfer = response.body.length() + 5;
+        bytesToTransfer = min(response.body.length(), 511) + 5;
         dongs = true;
 
 

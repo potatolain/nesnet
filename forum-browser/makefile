@@ -22,34 +22,34 @@ VERSION=0.1
 
 ### USER EDITABLE STUFF ENDS HERE
 
-all: main.s lib/crt0.o main.o test.nes
+all: browser.s lib/crt0.o browser.o browser.nes
 
-main.s: main.c 
-	$(MAIN_COMPILER) -Oi main.c --add-source
+browser.s: browser.c 
+	$(MAIN_COMPILER) -Oi browser.c --add-source --include-dir ./tools/cc65/include
 	
 lib/crt0.o: lib/crt0.asm ../src/nesnet.asm ../src/nesnet.h
 	$(MAIN_ASM_COMPILER) lib/crt0.asm
 
-main.o: main.s
-	$(MAIN_ASM_COMPILER) main.s
+browser.o: browser.s
+	$(MAIN_ASM_COMPILER) browser.s
 
-test.nes: lib/crt0.o main.o 
-	$(MAIN_LINKER) -C $(CONFIG_FILE) -o test.nes lib/crt0.o main.o lib/runtime.lib
+browser.nes: lib/crt0.o browser.o 
+	$(MAIN_LINKER) -C $(CONFIG_FILE) -o browser.nes lib/crt0.o browser.o lib/runtime.lib
 
 fceux:
-	$(MAIN_EMULATOR) test.nes
+	$(MAIN_EMULATOR) browser.nes
 	
 run: fceux
 
 nintendulator:
-	$(DEBUG_EMULATOR) test.nes
+	$(DEBUG_EMULATOR) browser.nes
 
 space_check:
-	$(SPACE_CHECKER) test.nes
+	$(SPACE_CHECKER) browser.nes
 
 
 clean:
 	-rm -f *.nes
 	-rm -f *.o
 	-rm -f lib/*.o
-	-rm -f main.s
+	-rm -f browser.s
