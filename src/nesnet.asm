@@ -152,6 +152,15 @@
 
 
 		; a is already PAD_STATE, but we want to ignore the first char, (used to adjust timing) so do nothing with it.
+		lda #1
+		jsr get_pad_values
+		; Read status code - temporarily put it in LEN until we've read everything.
+		lda <(PAD_STATE+1)
+		sta LEN
+		lda #1
+		jsr get_pad_values
+		lda <(PAD_STATE+1)
+		sta LEN+1
 		ldy #0
 
 		@loop: 
@@ -173,6 +182,8 @@
 		lda #0
 		sta (RESPONSE), y ; null terminate the string...
 
+		lda LEN
+		ldx LEN+1
 		
 		rts
 .endscope

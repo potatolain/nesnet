@@ -25,6 +25,6 @@ forum-browser/tools/readnes3/*
 !forum-browser/tools/readnes3/README.md
 forum-browser/tools/cc65/*
 !forum-browser/tools/cc65/README.md
-forum-browser/main.s
+forum-browser/browser.s
 forum-browser/graphics/processed/*
 !forum-browser/graphics/processed/empty

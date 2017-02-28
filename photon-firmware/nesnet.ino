@@ -137,8 +137,11 @@ void loop() {                                       // 'Round and 'round we go
     } else if (finishedReceivingData && !dongs) {
         GetNetResponse();
         // Skip the first null byte 
-        response.body.getBytes(&tweetData[5], min(response.body.length()+1, 512));
+        response.body.getBytes(&tweetData[7], min(response.body.length()+1, 512));
         tweetData[4] = ' '; // Add a garbage byte before to be ignored.
+        // Response code
+        tweetData[5] = response.status & 0xff;
+        tweetData[6] = (unsigned char)(response.status>>8) & 0xff;
         Particle.publish("requestUrl", receivedBytes);
         bytesToTransfer = min(response.body.length(), 511) + 5;
         dongs = true;

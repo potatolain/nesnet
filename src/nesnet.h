@@ -1,1 +1,1 @@
-void __fastcall__ http_get(unsigned char* url, unsigned char *buffer);
+int __fastcall__ http_get(unsigned char* url, unsigned char *buffer);

@@ -16,7 +16,6 @@ static unsigned char currentUrl[100];
 static unsigned char screenBuffer[20]; // Same data, but transformed for the screen, and with 3 bytes of prefix for neslib.
 static unsigned char currentPadState;
 static unsigned char callCount, i;
-static unsigned char *tempMessage;
 static unsigned char *currentChar;
 static unsigned int offset;
 static unsigned char forumIds[100]; // Support up to 50 forums with 0-99 ids.
@@ -29,6 +28,7 @@ static unsigned char currentTopicPosition = 0;
 static unsigned char totalForumCount = 0;
 static unsigned char totalTopicCount = 0;
 static unsigned char hasHitColon = FALSE;
+static int resCode;
 
 // Forward declarations of some functions that control game flow. For readability, they are defined later in the file. 
 // (Purist note: these probably belong in a header file. I may do that at some point, if I stop being lazy.)
@@ -72,6 +72,28 @@ void clear_screen() {
 	vram_fill(0, 0x03a0);
 }
 
+// Junky quick-n-dirty convert integer to string, to show an error code on our error screen.
+// Hat tip: http://stackoverflow.com/questions/9655202/how-to-convert-integer-to-string-in-c
+char* itoa(int i, char b[]){
+    char const digit[] = "0123456789";
+    char* p = b;
+	int shifter;
+    if(i<0){
+        *p++ = '-';
+        i *= -1;
+    }
+    shifter = i;
+    do{ //Move to where representation ends
+        ++p;
+        shifter = shifter/10;
+    }while(shifter);
+    *p = '\0';
+    do{ //Move back, inserting digits as u go
+        *--p = digit[i%10];
+        i = i/10;
+    }while(i);
+    return b;
+}
 
 void main(void) {
 	//rendering is disabled at the startup, the palette is all black
@@ -221,7 +243,7 @@ void showForum() {
 	currentUrl[FIRST_CUSTOM_URL_CHAR+4] = forumIds[currentForumPosition<<1 + 1];
 	currentUrl[FIRST_CUSTOM_URL_CHAR+5] = '\0';
 
-	http_get(currentUrl, theMessage);
+	resCode = http_get(currentUrl, theMessage);
 
 
 	ppu_off();
