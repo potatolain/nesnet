@@ -6,6 +6,7 @@
 #define GAME_STATE_HOME 1
 #define GAME_STATE_FORUM 2
 #define GAME_STATE_TOPIC 3
+#define GAME_STATE_ERROR 100
 
 #define ARROW_CHR_ID 255
 #define FIRST_CUSTOM_URL_CHAR 31
@@ -13,7 +14,7 @@
 
 static unsigned char theMessage[512];
 static unsigned char currentUrl[100];
-static unsigned char screenBuffer[20]; // Same data, but transformed for the screen, and with 3 bytes of prefix for neslib.
+static char screenBuffer[20]; // Same data, but transformed for the screen, and with 3 bytes of prefix for neslib.
 static unsigned char currentPadState;
 static unsigned char callCount, i;
 static unsigned char *currentChar;
@@ -23,6 +24,7 @@ static unsigned char forumIdA;
 static unsigned char forumIdB;
 static unsigned char currentForumId = 0;
 static unsigned char gameState = GAME_STATE_INIT;
+static unsigned char lastGameState = GAME_STATE_HOME;
 static unsigned char currentForumPosition = 0;
 static unsigned char currentTopicPosition = 0;
 static unsigned char totalForumCount = 0;
@@ -39,6 +41,8 @@ void showForum();
 void doForum();
 void showTopic();
 void doTopic();
+void showError();
+void doError();
 
 void put_str(unsigned int adr,const char *str)
 {
@@ -127,6 +131,9 @@ void main(void) {
 			case GAME_STATE_TOPIC:
 				doTopic();
 				break;
+			case GAME_STATE_ERROR:
+				doError();
+				break;
 		} 
 	}
 }
@@ -157,8 +164,12 @@ void showHome() {
 	ppu_wait_frame(); // Flush output to make sure we see this on screen first.
 	set_vram_update(NULL);
 
-	http_get("cpprograms.net/devnull/nesdev/", theMessage);
+	resCode = http_get("cpprograms.net/devnull/nesdev/", theMessage);
 
+	if (resCode != 200) {
+		showError();
+		return;
+	}
 
 	ppu_off();
 	clear_screen();
@@ -245,6 +256,10 @@ void showForum() {
 
 	resCode = http_get(currentUrl, theMessage);
 
+	if (resCode != 200) {
+		showError();
+		return;
+	}
 
 	ppu_off();
 	clear_screen();
@@ -313,4 +328,55 @@ void showTopic() {
 
 void doTopic() {
 
+}
+
+void showError() {
+	ppu_off();
+	clear_screen();
+	hide_pointer();
+
+	put_str(NTADR_A(2,3), "An error occurred");
+	put_str(NTADR_A(2,5), "Unable to load content from web.");
+	put_str(NTADR_A(2,6), "Press A to retry.");
+	screenBuffer[0] = 'C';
+	screenBuffer[1] = 'O';
+	screenBuffer[2] = 'D';
+	screenBuffer[3] = 'E';
+	screenBuffer[4] = ':';
+	screenBuffer[5] = ' ';
+	itoa(resCode, &screenBuffer[6]);
+	// All codes are 3 long, unless something goes really, really wrong.. so, just shove the \0 where it makes sense.
+	screenBuffer[9] = '\0';
+	put_str(NTADR_A(2,7), screenBuffer);
+
+	put_str(NTADR_A(2,9), "Content:");
+	put_str(NTADR_A(2,10), theMessage);
+	ppu_on_all();
+	lastGameState = gameState;
+	gameState = GAME_STATE_ERROR;
+}
+
+void doError() {
+	ppu_wait_frame();
+	currentPadState = pad_trigger(0);
+
+	if (currentPadState & PAD_A) {
+		switch (lastGameState) {
+			case GAME_STATE_INIT:
+				showHome(); // No actual solution here, so let's have a decent fallback. This should never happen.
+				break;
+			case GAME_STATE_HOME:
+				showHome();
+				break;
+			case GAME_STATE_FORUM:
+				showForum();
+				break;
+			case GAME_STATE_TOPIC:
+				showTopic();
+				break;
+			case GAME_STATE_ERROR:
+				showError();
+				break;
+		}
+	}
 }
