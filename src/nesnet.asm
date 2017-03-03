@@ -50,6 +50,7 @@
 		.byte %10000000
 
 	get: 
+	
 		sta RESPONSE
 		stx RESPONSE+1
 

@@ -16,7 +16,8 @@ static unsigned char theMessage[512];
 static unsigned char currentUrl[100];
 static char screenBuffer[20]; // Same data, but transformed for the screen, and with 3 bytes of prefix for neslib.
 static unsigned char currentPadState;
-static unsigned char callCount, i;
+static unsigned char callCount, i, j, k;
+static unsigned int ii;
 static unsigned char *currentChar;
 static unsigned int offset;
 static unsigned char forumIds[100]; // Support up to 50 forums with 0-99 ids.
@@ -29,8 +30,11 @@ static unsigned char currentForumPosition = 0;
 static unsigned char currentTopicPosition = 0;
 static unsigned char totalForumCount = 0;
 static unsigned char totalTopicCount = 0;
+static unsigned char currentTopicPost = 0;
+static unsigned char numberOfPosts = 0;
 static unsigned char hasHitColon = FALSE;
 static int resCode;
+static unsigned int topicIds[20]; // Support up to 20 topics with int ids.
 
 // Forward declarations of some functions that control game flow. For readability, they are defined later in the file. 
 // (Purist note: these probably belong in a header file. I may do that at some point, if I stop being lazy.)
@@ -76,7 +80,7 @@ void clear_screen() {
 	vram_fill(0, 0x03a0);
 }
 
-// Junky quick-n-dirty convert integer to string, to show an error code on our error screen.
+// Quick-n-dirty convert integer to string, to show an error code on our error screen.
 // Hat tip: http://stackoverflow.com/questions/9655202/how-to-convert-integer-to-string-in-c
 char* itoa(int i, char b[]){
     char const digit[] = "0123456789";
@@ -217,6 +221,7 @@ void doHome() {
 	// Undocumented feature - use select to restart.
 	if (currentPadState & PAD_SELECT) {
 		showHome();
+		return;
 	} else {
 		set_vram_update(NULL);
 	}
@@ -229,6 +234,7 @@ void doHome() {
 
 	if (currentPadState & PAD_A) {
 		showForum();
+		return;
 	}
 
 	oam_spr(0, 32 + (currentForumPosition<<3), ARROW_CHR_ID, 0, 0);
@@ -269,11 +275,23 @@ void showForum() {
 	forumIdA = 0;
 	forumIdB = 0;
 	currentForumId = 0;
+	j = 0;
+	ii = 0;
 
 	while (*currentChar != '\0') {
-		
+		// This is bogus now:
+		// 3 Iterator values here. ii = current char in row. j = current topic id (on page, not real id), k = value in loop for current char.
+		ii++;
 		// For now, just skip the id. We'll get there.
-		if (*currentChar == ':') {
+		if (!hasHitColon && *currentChar == ':') {
+			topicIds[j] = 0;
+			// Extremely, disgustingly inefficient way to get the id of the topic in the list.
+			for (k = 0; 
+			theMessage[ii - k] != '|' && ii - k < 1000; k++) { // The second statement looks unusual, but really we're just looking for overflow for if ii-k underflows. (Since both are unsigned)
+				if (theMessage[ii-k] >= '0' && theMessage[ii-k] <= '9') {
+					topicIds[j] += theMessage[ii] - '0';
+				}
+			}
 			hasHitColon = TRUE;
 		} else if (hasHitColon) {
 			vram_put(*currentChar-0x20);
@@ -281,6 +299,8 @@ void showForum() {
 		currentChar++;
 		if (*currentChar == '|') {
 			hasHitColon = FALSE;
+			i = 0;
+			j++;
 			offset += 0x20;
 			vram_adr(offset);
 			currentChar++;
@@ -311,11 +331,13 @@ void doForum() {
 
 	if (currentPadState & PAD_A) {
 		showTopic();
+		return;
 	}
 
 	// B to go back.
 	if (currentPadState & PAD_B) {
 		showHome();
+		return;
 	}
 
 	oam_spr(0, 32 + (currentTopicPosition<<3), ARROW_CHR_ID, 0, 0);
@@ -323,11 +345,101 @@ void doForum() {
 }
 
 void showTopic() {
+	// Little hack to not change the post number if we're staying on the same topic.
+	if (gameState != GAME_STATE_TOPIC) {
+		currentTopicPost = 0;
+	}
+	hide_pointer();
+	ppu_off();
+	clear_screen();
+	ppu_on_all();
+	
+	write_screen_buffer(2, 12, "Loading...");
 
+	ppu_wait_frame(); // Flush output to make sure we see this on screen first.
+	set_vram_update(NULL);
+
+	set_current_url();
+	currentUrl[FIRST_CUSTOM_URL_CHAR-1] = '/'; // TODO: Fix issues with \0 eating characters and making this into a not-url.
+	currentUrl[FIRST_CUSTOM_URL_CHAR] 	= '?';
+	currentUrl[FIRST_CUSTOM_URL_CHAR+1] = 'p';
+	currentUrl[FIRST_CUSTOM_URL_CHAR+2] = '=';
+	currentUrl[FIRST_CUSTOM_URL_CHAR+3] = '0' + currentTopicPost;
+	currentUrl[FIRST_CUSTOM_URL_CHAR+4] = '&';
+	currentUrl[FIRST_CUSTOM_URL_CHAR+5] = 't';
+	currentUrl[FIRST_CUSTOM_URL_CHAR+6] = '=';
+	itoa(topicIds[currentTopicPosition], &currentUrl[FIRST_CUSTOM_URL_CHAR+7]);
+
+	resCode = http_get(currentUrl, theMessage);
+
+	if (resCode != 200) {
+		showError();
+		return;
+	}
+
+	ppu_off();
+	clear_screen();
+	offset = 0x2081;
+	vram_adr(offset);
+	currentChar = &theMessage[0];
+	j = 0;
+	ii = 0;
+
+	// FIXME: This logic all needs help.
+	numberOfPosts = 10;
+	while (*currentChar != '\0') {
+		// This is bogus now:
+		// 3 Iterator values here. ii = current char in row. j = current topic id (on page, not real id), k = value in loop for current char.
+		ii++;
+		// For now, just skip the id. We'll get there.
+		/*if (*currentChar == ':') {
+			topicIds[j] = 0;
+			// Extremely, disgustingly inefficient way to get the id of the topic in the list.
+			for (k = 0; 
+			theMessage[ii - k] != '|' && ii - k < 1000; k++) { // The second statement looks unusual, but really we're just looking for overflow for if ii-k underflows. (Since both are unsigned)
+				if (theMessage[ii-k] >= '0' && theMessage[ii-k] <= '9') {
+					topicIds[j] += theMessage[ii] - '0';
+				}
+			}
+			hasHitColon = TRUE;
+		} else if (hasHitColon) {*/
+			vram_put(*currentChar-0x20);
+		//}
+		currentChar++;
+		/*if (*currentChar == '|') {
+			hasHitColon = FALSE;
+			i = 0;
+			j++;
+			offset += 0x20;
+			vram_adr(offset);
+			currentChar++;
+			totalTopicCount++;
+		}*/
+	}
+
+	ppu_on_all();
+	gameState = GAME_STATE_TOPIC;
 }
 
 void doTopic() {
+	ppu_wait_frame();
+	currentPadState = pad_trigger(0);
 
+	if (currentPadState & PAD_B) {
+		showForum();
+	}
+
+	if (currentPadState & PAD_SELECT) {
+		showTopic();
+	}
+
+	if (currentPadState & PAD_UP && currentTopicPost > 0) {
+		currentTopicPost--;
+		showTopic();
+	} else if (currentPadState & PAD_DOWN && currentTopicPost < numberOfPosts) {
+		currentTopicPost++;
+		showTopic();
+	}
 }
 
 void showError() {
