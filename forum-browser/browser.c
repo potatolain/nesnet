@@ -83,8 +83,8 @@ void clear_screen() {
 
 // Dumb helper method to show the URL on-screen to help debug
 // NOTE: Screen must be off.
-void draw_current_url() {
-	put_str(NTADR_A(1, 27), currentUrl);
+void draw_debug_info() {
+	// put_str(NTADR_A(1, 27), currentUrl);
 }
 
 // Quick-n-dirty convert integer to string, to show an error code on our error screen.
@@ -218,7 +218,7 @@ void showHome() {
 		}
 	}
 
-	draw_current_url();
+	draw_debug_info();
 
 	ppu_on_all();
 	gameState = GAME_STATE_HOME;
@@ -314,7 +314,7 @@ void showForum() {
 
 		ii++;
 	}
-	draw_current_url();
+	draw_debug_info();
 
 	ppu_on_all();
 	gameState = GAME_STATE_FORUM;
@@ -423,6 +423,8 @@ void showTopic() {
 			ii++;
 			if (ii % 20 == 0) {
 				offset += 0x20;
+				if (offset >= 0x2400) 
+					break;
 			}
 
 			if (*currentChar == '\n') {
@@ -435,7 +437,7 @@ void showTopic() {
 		vram_put(*currentChar-0x20);
 		currentChar++;
 	}
-	draw_current_url();
+	draw_debug_info();
 
 	ppu_on_all();
 	gameState = GAME_STATE_TOPIC;
@@ -483,7 +485,7 @@ void showError() {
 
 	put_str(NTADR_A(2,9), "Content:");
 	put_str(NTADR_A(2,10), theMessage);
-	draw_current_url();
+	draw_debug_info();
 	ppu_on_all();
 	// Deal with a second error coming from our original error state. :(
 	if (gameState != GAME_STATE_ERROR) {
