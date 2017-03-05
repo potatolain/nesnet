@@ -19,16 +19,11 @@ volatile unsigned int bytesToTransfer = 0;             // How many bytes are lef
 volatile unsigned char incomingBitCount = 0;
 volatile unsigned int incomingByteCount = 0;
 
-unsigned char tweetData[550];                       // Array that will hold 192 hex values representing tweet data      
+volatile unsigned char tweetData[550];                       // Array that will hold 192 hex values representing tweet data      
 char receivedBytes[100];
-volatile int nesClockCount = 0;
-volatile int lastNesClockCount = 0;
 volatile unsigned long currentTime = 0;
 volatile unsigned long lastTime = 0;
-unsigned long lastBitReset = 0;
-volatile bool isSendingBytes = 0;
 volatile bool readyToSendBytes = 0;
-volatile bool hasReceivedBytes = 0;
 volatile bool hasGottenHandshake = 0;
 volatile bool hasGottenHandshake1 = 0;
 volatile bool receivingData = 0;
@@ -40,6 +35,7 @@ volatile unsigned long lastLoadBearingLatch = 0;
 volatile unsigned long experiment;
 volatile unsigned long a, b;
 volatile bool dongs = 0;
+volatile bool hasByteLatched = 0;
 HttpClient http;
 
 volatile byte numLatches = 0;
@@ -58,11 +54,9 @@ http_response_t response;
 void setupData() {
     byteCount = 0;                                  // Initialize byteCount at zero, no letters printed to screen
     bytesToTransfer = 0;                            // Initialize bytesToTransfer at zero, no letters waiting to print to screen
-    nesClockCount = 1;
-    lastNesClockCount = 0;
     numLatches = 0;
-    currentTime = micros();
-    lastTime = currentTime;
+    currentTime = 9000;
+    lastTime = currentTime-9000;
     latchedByte = 0;
     bitCount = 0;
     finishedReceivingData = 0;
@@ -71,27 +65,17 @@ void setupData() {
     currentByte = 0;
     lastLoadBearingLatch = 0;
     currentBit = 0;
-    receivingData = false;
+    receivingData = 0;
+    hasByteLatched = 0;
 
-    bytesToTransfer = 13;
-    tweetData[0] = 0;
-    tweetData[1] = 0;
-    tweetData[2] = 0; // Prefix with a few zeroes to make sure we're on the same page as our NES friend. (TODO: Probably only need one or maaaybe two.)
-    tweetData[3] = 0;
-    tweetData[4] = 0;
-    tweetData[5] = 'L';
-    tweetData[6] = 'E';
-    tweetData[7] = 'M';
-    tweetData[8] = 'G';
-    tweetData[9] = 'U';
-    tweetData[10] = 'I';
-    tweetData[11] = 'N';
-    tweetData[12] = 'S';
-    dongs = false;
+    bytesToTransfer = 0;
+    dongs = 0;
     
     static int i;
     for (i = 0; i < 100; i++)
         receivedBytes[i] = 0;
+    for (i = 0; i < 550; i++)
+        tweetData[i] = 0;
         
     experiment = 0;
         
@@ -110,14 +94,14 @@ void setup() {
     pinMode(NES_LATCH, INPUT);                      // Set NES controller orange wire (latch) as an input
     pinMode(NES_DATA, OUTPUT);                      // Set NES controller yellow wire (data) as an output
     
-    attachInterrupt(NES_CLOCK, ClockNES, FALLING, 12);  // When NES clock ends, execute ClockNES
-    attachInterrupt(NES_LATCH, LatchNES, RISING, 13);   // When NES latch fires, execure LatchNES
+    attachInterrupt(NES_CLOCK, ClockNES, FALLING);  // When NES clock ends, execute ClockNES
+    attachInterrupt(NES_LATCH, LatchNES, RISING);   // When NES latch fires, execure LatchNES
     
     pinMode(PHOTON_LIGHT, OUTPUT);                             // Turn off the Photon's on-board LED
     digitalWrite(PHOTON_LIGHT, LOW);                           //
     
-    Particle.variable("received", receivedBytes, STRING);
-    Particle.variable("response", &tweetData[5], STRING);
+    //Particle.variable("received", receivedBytes, STRING);
+    //Particle.variable("response", &tweetData[5], STRING);
     
     setupData();
 }
@@ -129,20 +113,22 @@ void setup() {
 void loop() {                                       // 'Round and 'round we go    
     if (finishedReceivingData == true && gazornenplat == false) {
         char buffer[256];
-        sprintf(buffer, "NES Debug data received: %u, %u, %u, %u in %lu: %s", receivedBytes[0], receivedBytes[1], receivedBytes[2], receivedBytes[3], b-a, receivedBytes);
-        Particle.publish("dataReceived", buffer);
+        //sprintf(buffer, "NES Debug data received: %u, %u, %u, %u in %lu: %s", receivedBytes[0], receivedBytes[1], receivedBytes[2], receivedBytes[3], b-a, receivedBytes);
+        //Particle.publish("dataReceived", buffer);
         gazornenplat = true;
         
 
-    } else if (finishedReceivingData && !dongs) {
+    }
+    if (finishedReceivingData && !dongs) {
         GetNetResponse();
         // Skip the first null byte 
-        response.body.getBytes(&tweetData[7], min(response.body.length()+1, 512));
-        tweetData[4] = ' '; // Add a garbage byte before to be ignored.
+        response.body.getBytes((unsigned char*)&tweetData[7], min(response.body.length()+1, 512));
+        tweetData[4] = 255; // Add a garbage byte before to be ignored.
         // Response code
         tweetData[5] = response.status & 0xff;
         tweetData[6] = (unsigned char)(response.status>>8) & 0xff;
-        Particle.publish("requestUrl", receivedBytes);
+        // tweetData is definitely not corrupted.. corruption is somewhere else.
+        // Particle.publish("requestUrl", response.body);
         bytesToTransfer = min(response.body.length(), 511) + 5;
         dongs = true;
 
@@ -154,7 +140,7 @@ void loop() {                                       // 'Round and 'round we go
 
 
 void ClockNES() {
-    if (readyToSendBytes) {
+    if (readyToSendBytes && hasByteLatched) {
         digitalWrite(NES_DATA, latchedByte & 0x01);
         latchedByte >>= 1;
         bitCount++;
@@ -254,6 +240,7 @@ void LatchNES() {
             bitCount = 0;
             byteCount++;
         }
+        hasByteLatched = true;
     }
     lastTime = currentTime;
     currentTime = micros();

@@ -6,28 +6,28 @@
 ; TODO: macros cannot be placed in scopes - find a way to make these not risk clashing with someone else's stuff
 ; Maybe as simple as HttpLib_phy and HttpLib_ply, etc. Would be nice if there were a cleaner way though.
 .macro phy
-	sta MACRO_TEMP
+	sta NET_TEMP
 	tya
 	pha
-	lda MACRO_TEMP
+	lda NET_TEMP
 .endmacro
 .macro ply
-	sta MACRO_TEMP
+	sta NET_TEMP
 	pla
 	tay
-	lda MACRO_TEMP
+	lda NET_TEMP
 .endmacro
 .macro phx
-	sta MACRO_TEMP
+	sta NET_TEMP
 	txa
 	pha
-	lda MACRO_TEMP
+	lda NET_TEMP
 .endmacro
 .macro plx
-	sta MACRO_TEMP
+	sta NET_TEMP
 	pla
 	tax
-	lda MACRO_TEMP
+	lda NET_TEMP
 .endmacro
 
 .macro trigger_latch
@@ -145,31 +145,21 @@
 
 
 		@loop_zero:
-			lda #1
 			jsr get_pad_values ; use the c function to get the pad state. However, we want the exact state, in PAD_STATE
-			lda <(PAD_STATE+1)
 			cmp #0
 			beq @loop_zero
 
 
 		; a is already PAD_STATE, but we want to ignore the first char, (used to adjust timing) so do nothing with it.
-		lda #1
 		jsr get_pad_values
 		; Read status code - temporarily put it in LEN until we've read everything.
-		lda <(PAD_STATE+1)
-		sta LEN
-		lda #1
+		sta URL
 		jsr get_pad_values
-		lda <(PAD_STATE+1)
-		sta LEN+1
+		sta URL+1
 		ldy #0
 
 		@loop: 
-			phy
-			lda #1
 			jsr get_pad_values
-			ply
-			lda <(PAD_STATE+1)
 			cmp #0
 			beq @after_data
 			sta (RESPONSE), y
@@ -183,16 +173,13 @@
 		lda #0
 		sta (RESPONSE), y ; null terminate the string...
 
-		lda LEN
-		ldx LEN+1
+		lda URL
+		ldx URL+1
 		
 		rts
 .endscope
 
 get_pad_values: 
-
-	tay
-	ldx #0
 
 @padPollPort:
 
@@ -201,33 +188,32 @@ get_pad_values:
 	lda #0
 	sta CTRL_PORT1
 	lda #8
-	sta <TEMP
+	sta <NET_TEMP+1
 
 @padPollLoop:
 
-	lda CTRL_PORT1,y
+	lda CTRL_PORT2
 	lsr a
-	ror <PAD_BUF,x
-	dec <TEMP
+	ror <NET_TEMP
+	dec <NET_TEMP+1
 	bne @padPollLoop
 
 
 	; TODO: Do we want to do triple posts of chars, then read them 3 times? Should see how consistent we can get it without, as this will slow things down a lot.
 	; Alternatively, maybe we let the user choose?
+	; TODO2: Need more vars for buffer... trying to avoid using nesnet stuff directly. May also want separate defines for stuff like CTRL_PORTx
 	;inx
 	;cpx #3
 	;bne @padPollPort
 
-	lda <PAD_BUF
-	;cmp <PAD_BUF+1
+	lda <NET_TEMP
+	;cmp <NET_TEMP+1
 	;beq @done
-	;cmp <PAD_BUF+2
+	;cmp <NET_TEMP+2
 	;beq @done
-	;lda <PAD_BUF+1
+	;lda <NET_TEMP+1
 
 @done:
-
-	sta <PAD_STATE,y
 
 	rts
 

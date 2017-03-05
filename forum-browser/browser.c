@@ -80,6 +80,12 @@ void clear_screen() {
 	vram_fill(0, 0x03a0);
 }
 
+// Dumb helper method to show the URL on-screen to help debug
+// NOTE: Screen must be off.
+void draw_current_url() {
+	put_str(NTADR_A(1, 27), currentUrl);
+}
+
 // Quick-n-dirty convert integer to string, to show an error code on our error screen.
 // Hat tip: http://stackoverflow.com/questions/9655202/how-to-convert-integer-to-string-in-c
 char* itoa(int i, char b[]){
@@ -190,9 +196,9 @@ void showHome() {
 		} else if (forumIdB == 0) {
 			forumIdB = *currentChar;
 			if (*currentChar == ':') {
-				forumIds[currentForumId<<1 + 1] = ' ';
+				forumIds[(currentForumId<<1) + 1] = ' ';
 			} else {
-				forumIds[currentForumId<<1 + 1] = *currentChar;
+				forumIds[(currentForumId<<1) + 1] = *currentChar;
 				currentChar++; // Force-skip the colon after this char.
 
 			}
@@ -210,6 +216,8 @@ void showHome() {
 			forumIdA = forumIdB = 0;
 		}
 	}
+
+	draw_current_url();
 
 	ppu_on_all();
 	gameState = GAME_STATE_HOME;
@@ -257,7 +265,7 @@ void showForum() {
 	currentUrl[FIRST_CUSTOM_URL_CHAR+1] = 'f';
 	currentUrl[FIRST_CUSTOM_URL_CHAR+2] = '=';
 	currentUrl[FIRST_CUSTOM_URL_CHAR+3] = forumIds[currentForumPosition<<1];
-	currentUrl[FIRST_CUSTOM_URL_CHAR+4] = forumIds[currentForumPosition<<1 + 1];
+	currentUrl[FIRST_CUSTOM_URL_CHAR+4] = forumIds[(currentForumPosition<<1) + 1];
 	currentUrl[FIRST_CUSTOM_URL_CHAR+5] = '\0';
 
 	resCode = http_get(currentUrl, theMessage);
@@ -286,10 +294,9 @@ void showForum() {
 		if (!hasHitColon && *currentChar == ':') {
 			topicIds[j] = 0;
 			// Extremely, disgustingly inefficient way to get the id of the topic in the list.
-			for (k = 0; 
-			theMessage[ii - k] != '|' && ii - k < 1000; k++) { // The second statement looks unusual, but really we're just looking for overflow for if ii-k underflows. (Since both are unsigned)
+			for (k = 0; theMessage[ii - k] != '|' && ii - k < 1000; k++) { // The second statement looks unusual, but really we're just looking for overflow for if ii-k underflows. (Since both are unsigned)
 				if (theMessage[ii-k] >= '0' && theMessage[ii-k] <= '9') {
-					topicIds[j] += theMessage[ii] - '0';
+					topicIds[j] += (theMessage[ii-k] - '0') * (k * 10);
 				}
 			}
 			hasHitColon = TRUE;
@@ -307,6 +314,7 @@ void showForum() {
 			totalTopicCount++;
 		}
 	}
+	draw_current_url();
 
 	ppu_on_all();
 	gameState = GAME_STATE_FORUM;
@@ -416,6 +424,7 @@ void showTopic() {
 			totalTopicCount++;
 		}*/
 	}
+	draw_current_url();
 
 	ppu_on_all();
 	gameState = GAME_STATE_TOPIC;
@@ -463,6 +472,7 @@ void showError() {
 
 	put_str(NTADR_A(2,9), "Content:");
 	put_str(NTADR_A(2,10), theMessage);
+	draw_current_url();
 	ppu_on_all();
 	lastGameState = gameState;
 	gameState = GAME_STATE_ERROR;
