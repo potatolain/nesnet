@@ -16,8 +16,8 @@ static unsigned char theMessage[512];
 static unsigned char currentUrl[100];
 static char screenBuffer[20]; // Same data, but transformed for the screen, and with 3 bytes of prefix for neslib.
 static unsigned char currentPadState;
-static unsigned char callCount, i, j, k;
-static unsigned int ii;
+static unsigned char callCount, i, j;
+static unsigned int ii, jj;
 static unsigned char *currentChar;
 static unsigned int offset;
 static unsigned char forumIds[100]; // Support up to 50 forums with 0-99 ids.
@@ -35,6 +35,7 @@ static unsigned char numberOfPosts = 0;
 static unsigned char hasHitColon = FALSE;
 static int resCode;
 static unsigned int topicIds[20]; // Support up to 20 topics with int ids.
+static unsigned char hasGrabbedCount = 0, hasShownAuthor = 0, hasShownDate = 0;
 
 // Forward declarations of some functions that control game flow. For readability, they are defined later in the file. 
 // (Purist note: these probably belong in a header file. I may do that at some point, if I stop being lazy.)
@@ -284,19 +285,16 @@ void showForum() {
 	forumIdB = 0;
 	currentForumId = 0;
 	j = 0;
+	jj = 0;
 	ii = 0;
 
 	while (*currentChar != '\0') {
-		// This is bogus now:
-		// 3 Iterator values here. ii = current char in row. j = current topic id (on page, not real id), k = value in loop for current char.
-		ii++;
 		// For now, just skip the id. We'll get there.
 		if (!hasHitColon && *currentChar == ':') {
 			topicIds[j] = 0;
-			// Extremely, disgustingly inefficient way to get the id of the topic in the list.
-			for (k = 0; theMessage[ii - k] != '|' && ii - k < 1000; k++) { // The second statement looks unusual, but really we're just looking for overflow for if ii-k underflows. (Since both are unsigned)
-				if (theMessage[ii-k] >= '0' && theMessage[ii-k] <= '9') {
-					topicIds[j] += (theMessage[ii-k] - '0') * (k * 10);
+			for (i = 0; jj + i < ii; i++) {
+				if (theMessage[jj+i] >= '0' && theMessage[jj+i] <= '9') {
+					topicIds[j] = topicIds[j]*10 + (theMessage[jj+i] - '0');
 				}
 			}
 			hasHitColon = TRUE;
@@ -306,13 +304,15 @@ void showForum() {
 		currentChar++;
 		if (*currentChar == '|') {
 			hasHitColon = FALSE;
-			i = 0;
+			jj = ii;
 			j++;
 			offset += 0x20;
 			vram_adr(offset);
 			currentChar++;
 			totalTopicCount++;
 		}
+
+		ii++;
 	}
 	draw_current_url();
 
@@ -387,42 +387,53 @@ void showTopic() {
 
 	ppu_off();
 	clear_screen();
-	offset = 0x2081;
+	offset = 0x20e0;
 	vram_adr(offset);
 	currentChar = &theMessage[0];
 	j = 0;
 	ii = 0;
+	forumIdA = forumIdB = 0;
+	hasGrabbedCount = hasShownAuthor = hasShownDate = 0;
+	vram_adr(0x2081);
 
-	// FIXME: This logic all needs help.
 	numberOfPosts = 10;
 	while (*currentChar != '\0') {
-		// This is bogus now:
-		// 3 Iterator values here. ii = current char in row. j = current topic id (on page, not real id), k = value in loop for current char.
-		ii++;
-		// For now, just skip the id. We'll get there.
-		/*if (*currentChar == ':') {
-			topicIds[j] = 0;
-			// Extremely, disgustingly inefficient way to get the id of the topic in the list.
-			for (k = 0; 
-			theMessage[ii - k] != '|' && ii - k < 1000; k++) { // The second statement looks unusual, but really we're just looking for overflow for if ii-k underflows. (Since both are unsigned)
-				if (theMessage[ii-k] >= '0' && theMessage[ii-k] <= '9') {
-					topicIds[j] += theMessage[ii] - '0';
-				}
+		if (!hasGrabbedCount) {
+			if (*currentChar == '|') {
+				hasGrabbedCount = 1;
+			} else if (forumIdA == 0) {
+				forumIdA = *currentChar;
+			} else {
+				forumIdB = *currentChar;
+				numberOfPosts = ((forumIdA - '0') * 10) + (*currentChar - '0');
 			}
-			hasHitColon = TRUE;
-		} else if (hasHitColon) {*/
-			vram_put(*currentChar-0x20);
-		//}
-		currentChar++;
-		/*if (*currentChar == '|') {
-			hasHitColon = FALSE;
-			i = 0;
-			j++;
-			offset += 0x20;
+			currentChar++;
+			continue;
+		} else if (!hasShownAuthor && *currentChar == '|') {
+			hasShownAuthor = 1;
+			vram_adr(0x20a1);
+			currentChar++;
+			continue; // Skip this char but keep going.
+		} else if (!hasShownDate && *currentChar == '|') {
+			hasShownDate = 1;
 			vram_adr(offset);
 			currentChar++;
-			totalTopicCount++;
-		}*/
+			continue; // Skip this char too. Onto the message.
+		} else {
+			ii++;
+			if (ii % 20 == 0) {
+				offset += 0x20;
+			}
+
+			if (*currentChar == '\n') {
+				vram_adr(offset);
+				currentChar++;
+				continue;
+			}
+		}
+
+		vram_put(*currentChar-0x20);
+		currentChar++;
 	}
 	draw_current_url();
 
@@ -474,8 +485,11 @@ void showError() {
 	put_str(NTADR_A(2,10), theMessage);
 	draw_current_url();
 	ppu_on_all();
-	lastGameState = gameState;
-	gameState = GAME_STATE_ERROR;
+	// Deal with a second error coming from our original error state. :(
+	if (gameState != GAME_STATE_ERROR) {
+		lastGameState = gameState;
+		gameState = GAME_STATE_ERROR;
+	}
 }
 
 void doError() {

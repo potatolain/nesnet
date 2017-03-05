@@ -36,6 +36,7 @@ volatile unsigned long experiment;
 volatile unsigned long a, b;
 volatile bool dongs = 0;
 volatile bool hasByteLatched = 0;
+volatile unsigned char repeatCount = 0;
 HttpClient http;
 
 volatile byte numLatches = 0;
@@ -78,6 +79,7 @@ void setupData() {
         tweetData[i] = 0;
         
     experiment = 0;
+    repeatCount = 0;
         
         
    
@@ -126,7 +128,7 @@ void loop() {                                       // 'Round and 'round we go
         tweetData[4] = 255; // Add a garbage byte before to be ignored.
         // Response code
         tweetData[5] = response.status & 0xff;
-        tweetData[6] = (unsigned char)(response.status>>8) & 0xff;
+        tweetData[6] = (unsigned char)((response.status>>8)+1) & 0xff; // HACK: Add 1 to the high byte so that it is never 0. (= null; confuses us + the driver)
         // tweetData is definitely not corrupted.. corruption is somewhere else.
         // Particle.publish("requestUrl", response.body);
         bytesToTransfer = min(response.body.length(), 511) + 5;
@@ -225,8 +227,8 @@ void LatchNES() {
 
     } else if (dongs) { 
         readyToSendBytes = true;
-        if (byteCount == bytesToTransfer) {
-            latchedByte = 0xFF;
+        if (byteCount == bytesToTransfer+6) { // Intentionally going past the end of the string to send a few null bytes; tells the NES we're done.
+            latchedByte = 0xff;
             digitalWrite(NES_DATA, latchedByte & 0x01);
             latchedByte >>= 1;
             bitCount = 0;
@@ -237,8 +239,12 @@ void LatchNES() {
             latchedByte = tweetData[byteCount] ^ 0xFF;
             digitalWrite(NES_DATA, latchedByte & 0x01);
             latchedByte >>= 1;
-            bitCount = 0;
-            byteCount++;
+            repeatCount++;
+            bitCount = 0u;
+            if (repeatCount >= 3u) {
+                repeatCount = 0u;
+                byteCount++;
+            }
         }
         hasByteLatched = true;
     }
