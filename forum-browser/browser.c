@@ -153,7 +153,17 @@ void doInit() {
 	ppu_wait_frame();
 	currentPadState = pad_trigger(0);
 	if (currentPadState & PAD_START) {
-		showHome();
+		if (nesnet_check_connected()) {
+			showHome();
+		} else {
+			ppu_off();
+			put_str(NTADR_A(2,18), "NESNet device not detected.");
+			put_str(NTADR_A(2,20), "Connect it to the 2nd");
+			put_str(NTADR_A(2,21), "controller port, then reset");
+			put_str(NTADR_A(2,22), "the console.");
+			put_str(NTADR_A(2,24), "Press Start to try again.");
+			ppu_on_all();
+		}
 	} else {
 		set_vram_update(NULL);
 	}

@@ -114,25 +114,36 @@ void setup() {
 
 void loop() {                                       // 'Round and 'round we go    
     if (finishedReceivingData == true && gazornenplat == false) {
-        char buffer[256];
-        //sprintf(buffer, "NES Debug data received: %u, %u, %u, %u in %lu: %s", receivedBytes[0], receivedBytes[1], receivedBytes[2], receivedBytes[3], b-a, receivedBytes);
-        //Particle.publish("dataReceived", buffer);
+        // char buffer[256];
+        // sprintf(buffer, "NES Debug data received: %u, %u, %u, %u in %lu: %s", receivedBytes[0], receivedBytes[1], receivedBytes[2], receivedBytes[3], b-a);
+        // Particle.publish("dataReceived", buffer);
         gazornenplat = true;
         
 
     }
     if (finishedReceivingData && !dongs) {
-        GetNetResponse();
-        // Skip the first null byte 
-        response.body.getBytes((unsigned char*)&tweetData[7], min(response.body.length()+1, 512));
-        tweetData[4] = 255; // Add a garbage byte before to be ignored.
-        // Response code
-        tweetData[5] = response.status & 0xff;
-        tweetData[6] = (unsigned char)((response.status>>8)+1) & 0xff; // HACK: Add 1 to the high byte so that it is never 0. (= null; confuses us + the driver)
-        // tweetData is definitely not corrupted.. corruption is somewhere else.
-        // Particle.publish("requestUrl", response.body);
-        bytesToTransfer = min(response.body.length(), 511) + 5;
-        dongs = true;
+        if (strcmp(receivedBytes, "/test") == 0) {
+            tweetData[0] = 255;
+            tweetData[1] = 200;
+            tweetData[2] = 1;
+            for (int i = 0; i < 7; i++) {
+                tweetData[3+i] = "TEST OK"[i];
+            }
+            bytesToTransfer = 8;
+            dongs = true;
+        } else {
+            GetNetResponse();
+            // Skip the first null byte 
+            response.body.getBytes((unsigned char*)&tweetData[7], min(response.body.length()+1, 512));
+            tweetData[4] = 255; // Add a garbage byte before to be ignored.
+            // Response code
+            tweetData[5] = response.status & 0xff;
+            tweetData[6] = (unsigned char)((response.status>>8)+1) & 0xff; // HACK: Add 1 to the high byte so that it is never 0. (= null; confuses us + the driver)
+            // tweetData is definitely not corrupted.. corruption is somewhere else.
+            // Particle.publish("requestUrl", response.body);
+            bytesToTransfer = min(response.body.length(), 511) + 5;
+            dongs = true;
+        }
 
 
     }
@@ -227,7 +238,7 @@ void LatchNES() {
 
     } else if (dongs) { 
         readyToSendBytes = true;
-        if (byteCount == bytesToTransfer+6) { // Intentionally going past the end of the string to send a few null bytes; tells the NES we're done.
+        if (byteCount > 7 && tweetData[byteCount] == '\0') {
             latchedByte = 0xff;
             digitalWrite(NES_DATA, latchedByte & 0x01);
             latchedByte >>= 1;

@@ -1,4 +1,6 @@
 .feature c_comments
+.import popa,popax,pusha, pushax
+.import _nesnet_buffer
 
 ; Note: Since ca65 is kind of a pain, all exports are at the bottom. 
 ; If you really want to see what you can do though, the details should all be in nesnet.h :)
@@ -48,6 +50,9 @@
 		.byte %00100000
 		.byte %01000000
 		.byte %10000000
+
+	test_url: 
+		.asciiz "/test"
 
 	get: 
 	
@@ -143,11 +148,21 @@
 	; ========== END TIME SENSITIVE SECTION ==========
 
 
-
+		ldx #0
+		ldy #0
 		@loop_zero:
 			jsr get_pad_values_no_retry ; Wait until we start seeing real bytes flow in
 			cmp #0
-			beq @loop_zero
+			bne @escape_zero
+			inx
+			cpx #0
+			bne @loop_zero
+			iny
+			cpy #200
+			bne @loop_zero
+			jmp @get_complete_failure ; If we get to this point, it's never responding...
+
+		@escape_zero:
 
 
 		; Ignore the first char all 3 times it shows up.
@@ -181,8 +196,44 @@
 		ldx URL+1
 		
 		rts
-.endscope
 
+	@get_complete_failure:
+		lda #0
+		sta (RESPONSE), y
+		lda #<(599)
+		ldx #>(599)
+		rts
+
+test_connection:
+	lda #<(test_url)
+	ldx #>(test_url)
+	jsr pushax
+	lda #<(_nesnet_buffer)
+	ldx #>(_nesnet_buffer)
+	jsr get
+	
+	lda _nesnet_buffer
+	cmp #'T'
+	bne @bad_end
+	lda _nesnet_buffer+1
+	cmp #'E'
+	bne @bad_end
+	lda _nesnet_buffer+2
+	cmp #'S'
+	bne @bad_end
+	lda _nesnet_buffer+3
+	cmp #'T'
+	bne @bad_end
+	@happy_end: 
+		lda #1
+		ldx #0
+		rts
+	@bad_end:
+		lda #0
+		ldx #0
+		rts
+
+.endscope
 get_pad_values: 
 	ldx #0
 
@@ -250,8 +301,6 @@ get_pad_values_no_retry:
 
 	lda NET_BUFFER
 @done:
-
 	rts
-
-
 .export _http_get = HttpLib::get
+.export _nesnet_check_connected = HttpLib::test_connection
