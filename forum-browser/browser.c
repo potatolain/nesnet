@@ -32,6 +32,7 @@ static unsigned char totalForumCount = 0;
 static unsigned char totalTopicCount = 0;
 static unsigned char currentTopicPost = 0;
 static unsigned char numberOfPosts = 0;
+static unsigned char musicIsPaused = 1;
 static unsigned char hasHitColon = FALSE;
 static int resCode;
 static unsigned int topicIds[20]; // Support up to 20 topics with int ids.
@@ -39,6 +40,7 @@ static unsigned char hasGrabbedCount = 0, hasShownAuthor = 0, hasShownDate = 0;
 
 // Forward declarations of some functions that control game flow. For readability, they are defined later in the file. 
 // (Purist note: these probably belong in a header file. I may do that at some point, if I stop being lazy.)
+// TODO: camelcase or snakecase? Not both please, at least without good reason.
 void doInit();
 void showHome();
 void doHome();
@@ -48,6 +50,7 @@ void showTopic();
 void doTopic();
 void showError();
 void doError();
+void do_pause();
 
 void put_str(unsigned int adr,const char *str)
 {
@@ -120,13 +123,18 @@ void main(void) {
 	put_str(NTADR_A(4,2),"NESDev Forum Browser!");
 	put_str(NTADR_A(7,4), "By cppchriscpp");
 	put_str(NTADR_A(3,27), "Inspired by ConnectedNES");
-	put_str(NTADR_A(2,9),"Press start to browse the");
+	put_str(NTADR_A(2,9),"Press a to browse the");
 	put_str(NTADR_A(2,10),"most recent forum posts.");
+	put_str(NTADR_A(2,12), "Press start to toggle music");
+	put_str(NTADR_A(2,13), "After the Rain by Shiru");
 
 
 	ppu_on_all();//enable rendering
 	callCount = i = 0;
-	ppu_wait_frame();
+	ppu_wait_nmi();
+
+	music_play(0);
+ 	music_pause(1);
 
 	while(1) {
 		switch (gameState) {
@@ -149,10 +157,17 @@ void main(void) {
 	}
 }
 
+void do_pause() {
+	if (currentPadState & PAD_START) {
+		musicIsPaused = !musicIsPaused;
+		music_pause(musicIsPaused);
+	}
+}
+
 void doInit() {
 	ppu_wait_frame();
 	currentPadState = pad_trigger(0);
-	if (currentPadState & PAD_START) {
+	if (currentPadState & PAD_A) {
 		if (nesnet_check_connected()) {
 			showHome();
 		} else {
@@ -167,6 +182,8 @@ void doInit() {
 	} else {
 		set_vram_update(NULL);
 	}
+
+	do_pause();
 
 }
 
@@ -235,7 +252,7 @@ void showHome() {
 }
 
 void doHome() {
-	ppu_wait_frame();
+	ppu_wait_nmi();
 	currentPadState = pad_trigger(0);
 	// Undocumented feature - use select to restart.
 	if (currentPadState & PAD_SELECT) {
@@ -256,6 +273,7 @@ void doHome() {
 		return;
 	}
 
+	do_pause();
 	oam_spr(0, 32 + (currentForumPosition<<3), ARROW_CHR_ID, 0, 0);
 }
 
@@ -358,13 +376,13 @@ void doForum() {
 		return;
 	}
 
+	do_pause();
 	oam_spr(0, 32 + (currentTopicPosition<<3), ARROW_CHR_ID, 0, 0);
-
 }
 
 void showTopic() {
 	// Little hack to not change the post number if we're staying on the same topic.
-	if (gameState != GAME_STATE_TOPIC) {
+	if (gameState != GAME_STATE_TOPIC && gameState != GAME_STATE_ERROR) {
 		currentTopicPost = 0;
 	}
 	hide_pointer();
@@ -433,7 +451,7 @@ void showTopic() {
 			ii++;
 			if (ii % 20 == 0) {
 				offset += 0x20;
-				if (offset >= 0x2400) 
+				if (offset >= 0x2380) 
 					break;
 			}
 
@@ -448,6 +466,14 @@ void showTopic() {
 		currentChar++;
 	}
 	draw_debug_info();
+
+	screenBuffer[0] = '0' + ((currentTopicPost+1) / 10);
+	screenBuffer[1] = '0' + (currentTopicPost+1) % 10;
+	screenBuffer[2] = '/';
+	screenBuffer[3] = '0' + (numberOfPosts / 10);
+	screenBuffer[4] = '0' + (numberOfPosts % 10);
+	screenBuffer[5] = '\0';
+	put_str(NTADR_A(2, 28), screenBuffer);
 
 	ppu_on_all();
 	gameState = GAME_STATE_TOPIC;
@@ -472,6 +498,7 @@ void doTopic() {
 		currentTopicPost++;
 		showTopic();
 	}
+	do_pause();
 }
 
 void showError() {
@@ -526,5 +553,7 @@ void doError() {
 				showError();
 				break;
 		}
+	} else {
+		do_pause();
 	}
 }

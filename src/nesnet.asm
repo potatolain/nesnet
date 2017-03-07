@@ -39,6 +39,8 @@
 	sta $4016
 .endmacro
 
+.define INCOMING_BYTE_DELAY 50
+
 .scope HttpLib ; Use a separate scope to encapsulate some variables we use.
 
 	byte_to_bit_lookup: 
@@ -240,9 +242,17 @@ get_pad_values:
 @padPollPort:
 
 	; Forcibly space out the latch requests a little to reduce the likelihood the photon will get a latch out of order
-	.repeat 12
-		nop 
-	.endrepeat 
+	tya
+	pha
+	ldy #0
+	@loop_delay:
+		nop
+		iny
+		cpy #INCOMING_BYTE_DELAY
+		bne @loop_delay
+	pla
+	tay
+
 	lda #1
 	sta CTRL_PORT1
 	lda #0
@@ -276,9 +286,16 @@ get_pad_values:
 
 get_pad_values_no_retry: 
 	; Forcibly space out the latch requests a little to reduce the likelihood the photon will get a latch out of order
-	.repeat 12
-		nop 
-	.endrepeat 
+	tya
+	pha
+	ldy #0
+	@loop_delay:
+		nop
+		iny
+		cpy #INCOMING_BYTE_DELAY
+		bne @loop_delay
+	pla
+	tay
 
 
 @padPollPort:
@@ -302,5 +319,7 @@ get_pad_values_no_retry:
 	lda NET_BUFFER
 @done:
 	rts
+
+
 .export _http_get = HttpLib::get
 .export _nesnet_check_connected = HttpLib::test_connection
