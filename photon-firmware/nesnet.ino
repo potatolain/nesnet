@@ -9,7 +9,7 @@
 #define NES_DATA D3                                 // Yellow wire
 #define PHOTON_LIGHT 7
 #define LATCH_THRESHOLD 20
-#define FETCH_LATCH_THRESHOLD 20
+#define FETCH_LATCH_THRESHOLD 40
 #define HANDSHAKE_2_WAIT_TIME 0
 
 volatile unsigned char latchedByte = 0;                 // Controller press byte value = one letter in tweet
@@ -111,28 +111,38 @@ void setup() {
 
 void loop() {                                       // 'Round and 'round we go    
     if (finishedReceivingData == true && gazornenplat == false) {
-        // char buffer[256];
-        // sprintf(buffer, "NES Debug data received: %u, %u, %u, %u in %lu: %s", receivedBytes[0], receivedBytes[1], receivedBytes[2], receivedBytes[3], b-a, receivedBytes);
-        // Particle.publish("dataReceived", buffer);
+        char buffer[256];
+        sprintf(buffer, "NES Debug data received: %u, %u, %u, %u in %lu: %s", receivedBytes[0], receivedBytes[1], receivedBytes[2], receivedBytes[3], b-a, receivedBytes);
+        Particle.publish("dataReceived", buffer);
         gazornenplat = true;
         
 
     }
     if (finishedReceivingData && !hasFormattedData) {
+        int16_t temp;
         if (strcmp(receivedBytes, "/test") == 0) {
             tweetData[0] = 255;
             tweetData[1] = 'W';
             tweetData[2] = 'F';
             tweetData[3] = 200;
-            tweetData[4] = 1;
+            tweetData[4] = 1; // NOTE: The 1s here are actually zeroes... we have a hack in place that decrements this. See comment in main http section.
+            tweetData[5] = 7;
+            tweetData[6] = 1; // FIXME: Remove hack
             for (int i = 0; i < 7; i++) {
-                tweetData[5+i] = "TEST OK"[i];
+                tweetData[7+i] = "TEST OK"[i];
             }
             hasFormattedData = true;
         } else {
             GetNetResponse();
+
+            // Response body length is actually a 32 bit int... if we overflow what fits in a 16 bit int (there are probably other problems, but) try to do the right thing.
+            temp = response.body.length();
+            if (temp != response.body.length()) {
+                temp = 32767;
+            }
+
             // Skip the first null byte 
-            response.body.getBytes((unsigned char*)&tweetData[9], min(response.body.length()+1, 512));
+            response.body.getBytes((unsigned char*)&tweetData[11], min(response.body.length()+1, 512));
             tweetData[4] = 255; // Add a garbage byte before to be ignored.
             // Two more garbage bytes to ignore - past this point, the NES seems to figure out what's going on.
             // TODO: Really need to understand why I need to do this.
@@ -141,6 +151,8 @@ void loop() {                                       // 'Round and 'round we go
             // Response code
             tweetData[7] = response.status & 0xff;
             tweetData[8] = (unsigned char)((response.status>>8)+1) & 0xff; // HACK: Add 1 to the high byte so that it is never 0. (= null; confuses us + the driver)
+            tweetData[9] = temp & 0xff;
+            tweetData[10] = (unsigned char)((temp>>8)+1) & 0xff; // TODO: Remove this hack and the one above. It shouldn't be necessary anymore.
             hasFormattedData = true;
         }
 
@@ -237,7 +249,7 @@ void LatchNES() {
 
     } else if (hasFormattedData) { 
         readyToSendBytes = true;
-        if (byteCount > 7 && tweetData[byteCount] == '\0') {
+        if (byteCount == response.body.length() + 11) {
             latchedByte = 0xff;
             digitalWrite(NES_DATA, latchedByte & 0x01);
             latchedByte >>= 1;

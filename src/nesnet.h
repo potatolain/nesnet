@@ -5,8 +5,11 @@ unsigned char nesnet_buffer[20];
 
 /**
  * Make a generic HTTP request.
+ * url: The url to request.
+ * buffer: The character array to populate with data
+ * max_length: How many bytes to capture at maximum. This should be equal to the size of your buffer char array.
 */
-int __fastcall__ http_get(unsigned char* url, unsigned char *buffer);
+int __fastcall__ http_get(unsigned char* url, unsigned char *buffer, int max_length);
 
 /**
  * Test to make sure a NESNet adapter is connected and responding correctly.

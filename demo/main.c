@@ -67,7 +67,7 @@ void main(void) {
 		currentPadState = pad_trigger(0);
 		if (currentPadState & PAD_A) {
 			callCount++;
-			http_get("http://cpprograms.net/devnull/time.php", theMessage);
+			http_get("http://cpprograms.net/devnull/time.php", theMessage, 16);
 			
 			screenBuffer[0] = MSB(NTADR_A(2, 14)) | NT_UPD_HORZ;
 			screenBuffer[1] = LSB(NTADR_A(2, 14));

@@ -202,7 +202,7 @@ void showHome() {
 	ppu_wait_frame(); // Flush output to make sure we see this on screen first.
 	set_vram_update(NULL);
 
-	resCode = http_get("http://cpprograms.net/devnull/nesdev/", theMessage);
+	resCode = http_get("http://cpprograms.net/devnull/nesdev/", theMessage, 500);
 
 	if (resCode != 200) {
 		showError();
@@ -297,7 +297,7 @@ void showForum() {
 	currentUrl[FIRST_CUSTOM_URL_CHAR+4] = forumIds[(currentForumPosition<<1) + 1];
 	currentUrl[FIRST_CUSTOM_URL_CHAR+5] = '\0';
 
-	resCode = http_get(currentUrl, theMessage);
+	resCode = http_get(currentUrl, theMessage, 500);
 
 	if (resCode != 200) {
 		showError();
@@ -406,7 +406,7 @@ void showTopic() {
 	currentUrl[FIRST_CUSTOM_URL_CHAR+6] = '=';
 	itoa(topicIds[currentTopicPosition], &currentUrl[FIRST_CUSTOM_URL_CHAR+7]);
 
-	resCode = http_get(currentUrl, theMessage);
+	resCode = http_get(currentUrl, theMessage, 500);
 
 	if (resCode != 200) {
 		showError();

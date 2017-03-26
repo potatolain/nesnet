@@ -59,6 +59,10 @@
 
 	get: 
 	
+		sta MAX_LENGTH
+		stx MAX_LENGTH+1
+
+		jsr popax
 		sta RESPONSE
 		stx RESPONSE+1
 
@@ -197,18 +201,50 @@
 		
 
 		jsr get_pad_values
-		; Read status code - temporarily put it in LEN until we've read everything.
+		; Read status code - temporarily put it in URL until we've read everything.
 		sta URL
 		jsr get_pad_values
 		sta URL+1
-		dec URL+1 ; HACK: In the driver, we specifically increment this byte so it is never zero. (Which causes weirdness on this driver.) 
+		dec URL+1
+
+		jsr get_pad_values
+		sta RESPONSE_LENGTH
+		jsr get_pad_values
+		sta RESPONSE_LENGTH+1
+		dec RESPONSE_LENGTH+1
+
+		; TODO: Can we do something smart with RESPONSE_LENGTH and MAX_LENGTH to save 2 bytes in zp?
+		lda RESPONSE_LENGTH+1
+		cmp MAX_LENGTH+1
+		bcc @use_response_length
+		bne @dont_use_response_length
+			; Okay, they're equal... compare lo byte
+			lda RESPONSE_LENGTH
+			cmp MAX_LENGTH
+			bcc @use_response_length
+			; Else, use max length; fallthru.
+		@dont_use_response_length:
+			lda MAX_LENGTH+1
+			sta RESPONSE_LENGTH+1
+			lda MAX_LENGTH
+			sta RESPONSE_LENGTH
+		@use_response_length:
+
 		ldy #0
 
 		@loop: 
 			jsr get_pad_values
-			cmp #0
-			beq @after_data
 			sta (RESPONSE), y
+			dec RESPONSE_LENGTH
+			lda RESPONSE_LENGTH
+			cmp #255
+			bne @no_zeroing_response
+				; Okay, we went over 255 bytes. Did we go over the full length?
+				dec RESPONSE_LENGTH+1
+				lda RESPONSE_LENGTH+1
+				cmp #255
+				beq @after_data ; Else just kinda carry on...
+			@no_zeroing_response:
 			iny
 			cpy #0
 			bne @loop
@@ -219,6 +255,7 @@
 		lda #0
 		sta (RESPONSE), y ; null terminate the string...
 
+		; Put response code into return value.
 		lda URL
 		ldx URL+1
 		
@@ -237,6 +274,12 @@ test_connection:
 	jsr pushax
 	lda #<(_nesnet_buffer)
 	ldx #>(_nesnet_buffer)
+	jsr pushax
+
+	; Desired length is length of buffer... 4 whole bytes.
+	lda #4
+	ldx #0
+
 	jsr get
 	
 	lda _nesnet_buffer
