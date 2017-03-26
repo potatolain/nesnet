@@ -28,3 +28,5 @@ forum-browser/tools/cc65/*
 forum-browser/browser.s
 forum-browser/graphics/processed/*
 !forum-browser/graphics/processed/empty
+photon-firmware/bin
+!photon-firmware/bin/empty

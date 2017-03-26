@@ -40,6 +40,7 @@
 .endmacro
 
 .define INCOMING_BYTE_DELAY 50
+.define OUTGOING_BIT_DELAY 150 ; TODO: Play with this value.. in theory it could go lower. In practice, higher is okay too
 
 .scope HttpLib ; Use a separate scope to encapsulate some variables we use.
 
@@ -95,7 +96,7 @@
 		ldy #0
 		@string_loop:
 			ldx #0
-			@byte_loop:
+			@byte_loop: ; TODO: loop this 3 times.
 
 /* 5-6 */		lda (URL), y
 /* 2   */		cmp #0
@@ -123,7 +124,7 @@
 				@loop:
 					nop
 					inx
-					cpx #150
+					cpx #OUTGOING_BIT_DELAY
 					bne @loop
 				plx
 				inx
@@ -142,7 +143,7 @@
 					@loop_0:
 						nop
 						inx
-						cpx #150
+						cpx #OUTGOING_BIT_DELAY
 						bne @loop_0
 			.endscope
 		.endrepeat
@@ -170,7 +171,13 @@
 		; Ignore the first char all 3 times it shows up.
 		jsr get_pad_values_no_retry
 		jsr get_pad_values_no_retry ; Done ignoring...
+
+		; Ignore the next two chars too 
+		; TODO: Determine why this helps.
+		jsr get_pad_values
+		jsr get_pad_values
 		
+
 		jsr get_pad_values
 		; Read status code - temporarily put it in LEN until we've read everything.
 		sta URL

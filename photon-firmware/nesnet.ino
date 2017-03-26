@@ -15,7 +15,6 @@
 volatile unsigned char latchedByte = 0;                 // Controller press byte value = one letter in tweet
 volatile unsigned char bitCount = 0;                    // A single LDA $4017 (get one bit from "controller press")
 volatile unsigned int byteCount = 0;                   // How many bytes have already been printed
-volatile unsigned int bytesToTransfer = 0;             // How many bytes are left to print
 volatile unsigned char incomingBitCount = 0;
 volatile unsigned int incomingByteCount = 0;
 
@@ -54,7 +53,6 @@ http_response_t response;
 
 void setupData() {
     byteCount = 0;                                  // Initialize byteCount at zero, no letters printed to screen
-    bytesToTransfer = 0;                            // Initialize bytesToTransfer at zero, no letters waiting to print to screen
     numLatches = 0;
     currentTime = 9000;
     lastTime = currentTime-9000;
@@ -69,7 +67,6 @@ void setupData() {
     receivingData = 0;
     hasByteLatched = 0;
 
-    bytesToTransfer = 0;
     dongs = 0;
     
     static int i;
@@ -115,8 +112,8 @@ void setup() {
 void loop() {                                       // 'Round and 'round we go    
     if (finishedReceivingData == true && gazornenplat == false) {
         // char buffer[256];
-        // sprintf(buffer, "NES Debug data received: %u, %u, %u, %u in %lu: %s", receivedBytes[0], receivedBytes[1], receivedBytes[2], receivedBytes[3], b-a);
-        // Particle.publish("dataReceived", buffer);
+        //sprintf(buffer, "NES Debug data received: %u, %u, %u, %u in %lu: %s", receivedBytes[0], receivedBytes[1], receivedBytes[2], receivedBytes[3], b-a);
+        //Particle.publish("dataReceived", buffer);
         gazornenplat = true;
         
 
@@ -124,24 +121,26 @@ void loop() {                                       // 'Round and 'round we go
     if (finishedReceivingData && !dongs) {
         if (strcmp(receivedBytes, "/test") == 0) {
             tweetData[0] = 255;
-            tweetData[1] = 200;
-            tweetData[2] = 1;
+            tweetData[1] = 'W';
+            tweetData[2] = 'F';
+            tweetData[3] = 200;
+            tweetData[4] = 1;
             for (int i = 0; i < 7; i++) {
-                tweetData[3+i] = "TEST OK"[i];
+                tweetData[5+i] = "TEST OK"[i];
             }
-            bytesToTransfer = 8;
             dongs = true;
         } else {
             GetNetResponse();
             // Skip the first null byte 
-            response.body.getBytes((unsigned char*)&tweetData[7], min(response.body.length()+1, 512));
+            response.body.getBytes((unsigned char*)&tweetData[9], min(response.body.length()+1, 512));
             tweetData[4] = 255; // Add a garbage byte before to be ignored.
+            // Two more garbage bytes to ignore - past this point, the NES seems to figure out what's going on.
+            // TODO: Really need to understand why I need to do this.
+            tweetData[5] = 'W';
+            tweetData[6] = 'F';
             // Response code
-            tweetData[5] = response.status & 0xff;
-            tweetData[6] = (unsigned char)((response.status>>8)+1) & 0xff; // HACK: Add 1 to the high byte so that it is never 0. (= null; confuses us + the driver)
-            // tweetData is definitely not corrupted.. corruption is somewhere else.
-            // Particle.publish("requestUrl", response.body);
-            bytesToTransfer = min(response.body.length(), 511) + 5;
+            tweetData[7] = response.status & 0xff;
+            tweetData[8] = (unsigned char)((response.status>>8)+1) & 0xff; // HACK: Add 1 to the high byte so that it is never 0. (= null; confuses us + the driver)
             dongs = true;
         }
 

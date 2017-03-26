@@ -176,7 +176,7 @@ void doInit() {
 			put_str(NTADR_A(2,20), "Connect it to the 2nd");
 			put_str(NTADR_A(2,21), "controller port, then reset");
 			put_str(NTADR_A(2,22), "the console.");
-			put_str(NTADR_A(2,24), "Press Start to try again.");
+			put_str(NTADR_A(2,24), "Press A to try again.");
 			ppu_on_all();
 		}
 	} else {
