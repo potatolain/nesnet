@@ -33,7 +33,7 @@ volatile bool gazornenplat = 0;
 volatile unsigned long lastLoadBearingLatch = 0;
 volatile unsigned long experiment;
 volatile unsigned long a, b;
-volatile bool dongs = 0;
+volatile bool hasFormattedData = 0;
 volatile bool hasByteLatched = 0;
 volatile unsigned char repeatCount = 0;
 HttpClient http;
@@ -67,7 +67,7 @@ void setupData() {
     receivingData = 0;
     hasByteLatched = 0;
 
-    dongs = 0;
+    hasFormattedData = 0;
     
     static int i;
     for (i = 0; i < 100; i++)
@@ -118,7 +118,7 @@ void loop() {                                       // 'Round and 'round we go
         
 
     }
-    if (finishedReceivingData && !dongs) {
+    if (finishedReceivingData && !hasFormattedData) {
         if (strcmp(receivedBytes, "/test") == 0) {
             tweetData[0] = 255;
             tweetData[1] = 'W';
@@ -128,7 +128,7 @@ void loop() {                                       // 'Round and 'round we go
             for (int i = 0; i < 7; i++) {
                 tweetData[5+i] = "TEST OK"[i];
             }
-            dongs = true;
+            hasFormattedData = true;
         } else {
             GetNetResponse();
             // Skip the first null byte 
@@ -141,7 +141,7 @@ void loop() {                                       // 'Round and 'round we go
             // Response code
             tweetData[7] = response.status & 0xff;
             tweetData[8] = (unsigned char)((response.status>>8)+1) & 0xff; // HACK: Add 1 to the high byte so that it is never 0. (= null; confuses us + the driver)
-            dongs = true;
+            hasFormattedData = true;
         }
 
 
@@ -235,7 +235,7 @@ void LatchNES() {
             lastLoadBearingLatch = micros();
         }
 
-    } else if (dongs) { 
+    } else if (hasFormattedData) { 
         readyToSendBytes = true;
         if (byteCount > 7 && tweetData[byteCount] == '\0') {
             latchedByte = 0xff;
