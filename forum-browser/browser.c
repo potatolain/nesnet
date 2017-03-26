@@ -33,6 +33,7 @@ static unsigned char totalTopicCount = 0;
 static unsigned char currentTopicPost = 0;
 static unsigned char numberOfPosts = 0;
 static unsigned char musicIsPaused = 1;
+static unsigned char nesnetConnected = 0, nesnetConnectionAttempts = 0;
 static unsigned char hasHitColon = FALSE;
 static int resCode;
 static unsigned int topicIds[20]; // Support up to 20 topics with int ids.
@@ -90,6 +91,16 @@ void draw_debug_info() {
 	// put_str(NTADR_A(1, 27), currentUrl);
 }
 
+void show_connection_failure() {
+	ppu_off();
+	put_str(NTADR_A(2,18), "NESNet device not detected.");
+	put_str(NTADR_A(2,20), "Connect it to the 2nd");
+	put_str(NTADR_A(2,21), "controller port, then reset");
+	put_str(NTADR_A(2,22), "the console.");
+	put_str(NTADR_A(2,24), "Press A to try again.");
+	ppu_on_all();
+}
+
 // Quick-n-dirty convert integer to string, to show an error code on our error screen.
 // Hat tip: http://stackoverflow.com/questions/9655202/how-to-convert-integer-to-string-in-c
 char* itoa(int i, char b[]){
@@ -127,6 +138,7 @@ void main(void) {
 	put_str(NTADR_A(2,10),"most recent forum posts.");
 	put_str(NTADR_A(2,12), "Press start to toggle music");
 	put_str(NTADR_A(2,13), "After the Rain by Shiru");
+	put_str(NTADR_A(2,18), "Waiting for NESNet...");
 
 
 	ppu_on_all();//enable rendering
@@ -171,16 +183,25 @@ void doInit() {
 		if (nesnet_check_connected()) {
 			showHome();
 		} else {
-			ppu_off();
-			put_str(NTADR_A(2,18), "NESNet device not detected.");
-			put_str(NTADR_A(2,20), "Connect it to the 2nd");
-			put_str(NTADR_A(2,21), "controller port, then reset");
-			put_str(NTADR_A(2,22), "the console.");
-			put_str(NTADR_A(2,24), "Press A to try again.");
-			ppu_on_all();
+			show_connection_failure();
 		}
 	} else {
 		set_vram_update(NULL);
+		// Poll for the device until we see it connected.
+		if (!nesnetConnected && nesnetConnectionAttempts < 5) {
+			nesnetConnected = nesnet_check_connected();
+			nesnetConnectionAttempts++;
+			if (nesnetConnected) {
+				// If the device is connected, remove connecting message.
+				ppu_off();
+				put_str(NTADR_A(2, 18), "                    ");
+				ppu_on_all();
+			}
+		} else if (nesnetConnectionAttempts == 5) {
+			show_connection_failure();
+			// Increment one more time so we only see this message show up once.
+			nesnetConnectionAttempts++;
+		}
 	}
 
 	do_pause();

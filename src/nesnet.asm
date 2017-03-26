@@ -183,7 +183,7 @@
 			cpx #0
 			bne @loop_zero
 			iny
-			cpy #200
+			cpy #50
 			bne @loop_zero
 			jmp @get_complete_failure ; If we get to this point, it's never responding...
 
