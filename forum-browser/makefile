@@ -47,7 +47,6 @@ nintendulator:
 space_check:
 	$(SPACE_CHECKER) browser.nes
 
-
 clean:
 	-rm -f *.nes
 	-rm -f *.o

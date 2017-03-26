@@ -55,7 +55,7 @@
 		.byte %10000000
 
 	test_url: 
-		.asciiz "/test"
+		.asciiz "http:///test"
 
 	get: 
 	
@@ -63,8 +63,26 @@
 		stx RESPONSE+1
 
 		jsr popax
+		clc
+		adc #7 ; Add 7 to skip http://, since http is the only supported protocol for now.
 		sta URL
-		stx URL+1
+		txa
+		adc #0
+		sta URL+1
+
+		; Artificial delay before sending handshake, so we don't get any false positives if the game triggered a latch recently.
+		; TODO: This is probably overzealous
+		ldy #0
+		ldx #0
+		@loop_wait1:
+			nop
+			iny
+			cpy #0
+			bne @loop_wait1
+			inx
+			cpx #120
+			bne @loop_wait1
+
 
 		; TODO: Make a real handshake so we stop triggering the stupid powerpak
 		.repeat 8

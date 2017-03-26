@@ -1,15 +1,15 @@
-// This #include statement was automatically added by the Particle IDE.
-#include "HttpClient.h"
-
 // nesnet Particle Photon firmware
 // Heavily based on the connectedNES driver by hxlnt
+
+// NOTE: HttpClient is released under LGPL. See the full license in lib/http_client. 
+#include "lib/http_client/HttpClient.h"
 
 #define NES_CLOCK D1                                // Red wire
 #define NES_LATCH D2                                // Orange wire
 #define NES_DATA D3                                 // Yellow wire
 #define PHOTON_LIGHT 7
 #define LATCH_THRESHOLD 20
-#define FETCH_LATCH_THRESHOLD 40
+#define FETCH_LATCH_THRESHOLD 20
 #define HANDSHAKE_2_WAIT_TIME 0
 
 volatile unsigned char latchedByte = 0;                 // Controller press byte value = one letter in tweet
@@ -112,8 +112,8 @@ void setup() {
 void loop() {                                       // 'Round and 'round we go    
     if (finishedReceivingData == true && gazornenplat == false) {
         // char buffer[256];
-        //sprintf(buffer, "NES Debug data received: %u, %u, %u, %u in %lu: %s", receivedBytes[0], receivedBytes[1], receivedBytes[2], receivedBytes[3], b-a);
-        //Particle.publish("dataReceived", buffer);
+        // sprintf(buffer, "NES Debug data received: %u, %u, %u, %u in %lu: %s", receivedBytes[0], receivedBytes[1], receivedBytes[2], receivedBytes[3], b-a, receivedBytes);
+        // Particle.publish("dataReceived", buffer);
         gazornenplat = true;
         
 
@@ -192,9 +192,9 @@ void LatchNES() {
         if (currentTime - lastTime < LATCH_THRESHOLD) {
             numLatches++;
         } else {
-            numLatches = 0;
+            numLatches = 1;
         }
-        if (numLatches >= 7) {
+        if (numLatches >= 8) {
             hasGottenHandshake = true;
             gazornenplat = false;
             

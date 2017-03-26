@@ -9,7 +9,7 @@
 #define GAME_STATE_ERROR 100
 
 #define ARROW_CHR_ID 255
-#define FIRST_CUSTOM_URL_CHAR 31
+#define FIRST_CUSTOM_URL_CHAR 38
 
 
 static unsigned char theMessage[512];
@@ -65,7 +65,7 @@ void put_str(unsigned int adr,const char *str)
 }
 
 void set_current_url() {
-	memcpy(currentUrl, "cpprograms.net/devnull/nesdev/", FIRST_CUSTOM_URL_CHAR-1);
+	memcpy(currentUrl, "http://cpprograms.net/devnull/nesdev/", FIRST_CUSTOM_URL_CHAR-1);
 	currentUrl[FIRST_CUSTOM_URL_CHAR] = '\0';
 }
 
@@ -202,7 +202,7 @@ void showHome() {
 	ppu_wait_frame(); // Flush output to make sure we see this on screen first.
 	set_vram_update(NULL);
 
-	resCode = http_get("cpprograms.net/devnull/nesdev/", theMessage);
+	resCode = http_get("http://cpprograms.net/devnull/nesdev/", theMessage);
 
 	if (resCode != 200) {
 		showError();
