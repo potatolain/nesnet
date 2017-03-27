@@ -41,16 +41,15 @@ static unsigned char hasGrabbedCount = 0, hasShownAuthor = 0, hasShownDate = 0;
 
 // Forward declarations of some functions that control game flow. For readability, they are defined later in the file. 
 // (Purist note: these probably belong in a header file. I may do that at some point, if I stop being lazy.)
-// TODO: camelcase or snakecase? Not both please, at least without good reason.
-void doInit();
-void showHome();
-void doHome();
-void showForum();
-void doForum();
-void showTopic();
-void doTopic();
-void showError();
-void doError();
+void do_init();
+void show_home();
+void do_home();
+void show_forum();
+void do_forum();
+void show_topic();
+void do_topic();
+void show_error();
+void do_error();
 void do_pause();
 
 void put_str(unsigned int adr,const char *str)
@@ -151,19 +150,19 @@ void main(void) {
 	while(1) {
 		switch (gameState) {
 			case GAME_STATE_INIT:
-				doInit();
+				do_init();
 				break;
 			case GAME_STATE_HOME:
-				doHome();
+				do_home();
 				break;
 			case GAME_STATE_FORUM:
-				doForum();
+				do_forum();
 				break;
 			case GAME_STATE_TOPIC:
-				doTopic();
+				do_topic();
 				break;
 			case GAME_STATE_ERROR:
-				doError();
+				do_error();
 				break;
 		} 
 	}
@@ -176,12 +175,12 @@ void do_pause() {
 	}
 }
 
-void doInit() {
+void do_init() {
 	ppu_wait_frame();
 	currentPadState = pad_trigger(0);
 	if (currentPadState & PAD_A) {
 		if (nesnet_check_connected()) {
-			showHome();
+			show_home();
 		} else {
 			show_connection_failure();
 		}
@@ -212,7 +211,7 @@ void hide_pointer() {
 	oam_spr(0, 0xff, 0, 0, 0);
 }
 
-void showHome() {
+void show_home() {
 	hide_pointer();
 	ppu_off();
 	clear_screen();
@@ -226,7 +225,7 @@ void showHome() {
 	resCode = http_get("http://cpprograms.net/devnull/nesdev/", theMessage, 500);
 
 	if (resCode != 200) {
-		showError();
+		show_error();
 		return;
 	}
 
@@ -272,12 +271,12 @@ void showHome() {
 	gameState = GAME_STATE_HOME;
 }
 
-void doHome() {
+void do_home() {
 	ppu_wait_nmi();
 	currentPadState = pad_trigger(0);
 	// Undocumented feature - use select to restart.
 	if (currentPadState & PAD_SELECT) {
-		showHome();
+		show_home();
 		return;
 	} else {
 		set_vram_update(NULL);
@@ -290,7 +289,7 @@ void doHome() {
 	}
 
 	if (currentPadState & PAD_A) {
-		showForum();
+		show_forum();
 		return;
 	}
 
@@ -298,7 +297,7 @@ void doHome() {
 	oam_spr(0, 32 + (currentForumPosition<<3), ARROW_CHR_ID, 0, 0);
 }
 
-void showForum() {
+void show_forum() {
 	hide_pointer();
 	ppu_off();
 	clear_screen();
@@ -321,7 +320,7 @@ void showForum() {
 	resCode = http_get(currentUrl, theMessage, 500);
 
 	if (resCode != 200) {
-		showError();
+		show_error();
 		return;
 	}
 
@@ -370,12 +369,12 @@ void showForum() {
 }
 
 
-void doForum() {
+void do_forum() {
 	ppu_wait_frame();
 	currentPadState = pad_trigger(0);
 	// Undocumented feature - use select to restart.
 	if (currentPadState & PAD_SELECT) {
-		showForum();
+		show_forum();
 	} else {
 		set_vram_update(NULL);
 	}
@@ -387,13 +386,13 @@ void doForum() {
 	}
 
 	if (currentPadState & PAD_A) {
-		showTopic();
+		show_topic();
 		return;
 	}
 
 	// B to go back.
 	if (currentPadState & PAD_B) {
-		showHome();
+		show_home();
 		return;
 	}
 
@@ -401,7 +400,7 @@ void doForum() {
 	oam_spr(0, 32 + (currentTopicPosition<<3), ARROW_CHR_ID, 0, 0);
 }
 
-void showTopic() {
+void show_topic() {
 	// Little hack to not change the post number if we're staying on the same topic.
 	if (gameState != GAME_STATE_TOPIC && gameState != GAME_STATE_ERROR) {
 		currentTopicPost = 0;
@@ -430,7 +429,7 @@ void showTopic() {
 	resCode = http_get(currentUrl, theMessage, 500);
 
 	if (resCode != 200) {
-		showError();
+		show_error();
 		return;
 	}
 
@@ -500,29 +499,29 @@ void showTopic() {
 	gameState = GAME_STATE_TOPIC;
 }
 
-void doTopic() {
+void do_topic() {
 	ppu_wait_frame();
 	currentPadState = pad_trigger(0);
 
 	if (currentPadState & PAD_B) {
-		showForum();
+		show_forum();
 	}
 
 	if (currentPadState & PAD_SELECT) {
-		showTopic();
+		show_topic();
 	}
 
 	if (currentPadState & PAD_UP && currentTopicPost > 0) {
 		currentTopicPost--;
-		showTopic();
+		show_topic();
 	} else if (currentPadState & PAD_DOWN && currentTopicPost < numberOfPosts) {
 		currentTopicPost++;
-		showTopic();
+		show_topic();
 	}
 	do_pause();
 }
 
-void showError() {
+void show_error() {
 	ppu_off();
 	clear_screen();
 	hide_pointer();
@@ -552,26 +551,26 @@ void showError() {
 	}
 }
 
-void doError() {
+void do_error() {
 	ppu_wait_frame();
 	currentPadState = pad_trigger(0);
 
 	if (currentPadState & PAD_A) {
 		switch (lastGameState) {
 			case GAME_STATE_INIT:
-				showHome(); // No actual solution here, so let's have a decent fallback. This should never happen.
+				show_home(); // No actual solution here, so let's have a decent fallback. This should never happen.
 				break;
 			case GAME_STATE_HOME:
-				showHome();
+				show_home();
 				break;
 			case GAME_STATE_FORUM:
-				showForum();
+				show_forum();
 				break;
 			case GAME_STATE_TOPIC:
-				showTopic();
+				show_topic();
 				break;
 			case GAME_STATE_ERROR:
-				showError();
+				show_error();
 				break;
 		}
 	} else {
