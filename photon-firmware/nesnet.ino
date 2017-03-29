@@ -9,7 +9,7 @@
 #define NES_DATA D3                                 // Yellow wire
 #define PHOTON_LIGHT 7
 #define LATCH_THRESHOLD 20
-#define FETCH_LATCH_THRESHOLD 40
+#define FETCH_LATCH_THRESHOLD 60
 #define HANDSHAKE_2_WAIT_TIME 0
 
 volatile unsigned char latchedByte = 0;                 // Controller press byte value = one letter in tweet
@@ -236,7 +236,7 @@ void LatchNES() {
                 incomingBitCount = 0;
                 receivedBytes[incomingByteCount] = currentByte;
                 incomingByteCount++;
-                if (currentByte == 0 && incomingByteCount > 1) { // TODO: Is this ok?
+                if (currentByte == 0 && incomingByteCount > 1) { // TODO: Do length-based transfer, instead of null-terminated strings. Imagine binary data for payload.
                     finishedReceivingData = true;
                     b = micros();
                 }

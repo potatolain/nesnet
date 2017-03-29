@@ -39,8 +39,9 @@
 	sta $4016
 .endmacro
 
-.define INCOMING_BYTE_DELAY 50
-.define OUTGOING_BIT_DELAY 150 ; TODO: Play with this value.. in theory it could go lower. In practice, higher is okay too
+.define INCOMING_BYTE_DELAY 50 ; How long do we wait between incoming bytes?
+.define OUTGOING_BIT_DELAY 200 ; How much delay do we put between each bit we send out in order to tell the fake "controller" 1/0?
+.define NESNET_RESPONSE_WAIT_TIME 50 ; How long do we wait for a response from the controller before giving up?
 
 .scope HttpLib ; Use a separate scope to encapsulate some variables we use.
 
@@ -106,6 +107,8 @@
 			cpx #120
 			bne @loop_wait
 
+		jsr NESNET_WAIT_NMI
+
 	; ========== START EXTREMELY TIME SENSITIVE CODE ==========
 
 		; If you change anything in here, be ready to adjust the photon firmware to match.
@@ -153,8 +156,14 @@
 				cpx #8
 				bne @byte_loop
 			iny
+			tya
+			and #%00001111
+			cmp #0
+			bne @skip_waiting
+				jsr NESNET_WAIT_NMI
+			@skip_waiting:
 			cpy #254
-			bne @string_loop ; TODO: Allow for more than 255 chars
+			bne @string_loop ; TODO: Allow for more than 255 chars. Also include nmi wait logic when this happens.
 		@break_loop:
 
 		; Finally, send a 0 byte
@@ -172,6 +181,7 @@
 
 	; ========== END TIME SENSITIVE SECTION ==========
 
+		jsr NESNET_WAIT_NMI
 
 		ldx #0
 		ldy #0
@@ -182,8 +192,9 @@
 			inx
 			cpx #0
 			bne @loop_zero
+			jsr NESNET_WAIT_NMI ; Play music n stuff while we wait...
 			iny
-			cpy #50
+			cpy #NESNET_RESPONSE_WAIT_TIME
 			bne @loop_zero
 			jmp @get_complete_failure ; If we get to this point, it's never responding...
 
@@ -230,6 +241,8 @@
 			sta RESPONSE_LENGTH
 		@use_response_length:
 
+		jsr NESNET_WAIT_NMI
+
 		ldy #0
 
 		@loop: 
@@ -239,11 +252,15 @@
 			lda RESPONSE_LENGTH
 			cmp #255
 			bne @no_zeroing_response
-				; Okay, we went over 255 bytes. Did we go over the full length?
+				; Okay, we went over 255 bytes. 
+				
+				; Did we go over the full length?
 				dec RESPONSE_LENGTH+1
 				lda RESPONSE_LENGTH+1
 				cmp #255
 				beq @after_data ; Else just kinda carry on...
+				; But wait a moment first, to make sure we don't get interrupted during timing-critical pieces. Pesky interrupts...
+				jsr NESNET_WAIT_NMI
 			@no_zeroing_response:
 			iny
 			cpy #0

@@ -15,6 +15,10 @@
 static unsigned char theMessage[512];
 static unsigned char currentUrl[100];
 static char screenBuffer[20]; // Same data, but transformed for the screen, and with 3 bytes of prefix for neslib.
+static unsigned int topicIds[20]; // Support up to 20 topics with int ids.
+#pragma bssseg (push,"ZEROPAGE")
+#pragma dataseg(push,"ZEROPAGE")
+
 static unsigned char currentPadState;
 static unsigned char callCount, i, j;
 static unsigned int ii, jj;
@@ -36,8 +40,10 @@ static unsigned char musicIsPaused = 1;
 static unsigned char nesnetConnected = 0, nesnetConnectionAttempts = 0;
 static unsigned char hasHitColon = FALSE;
 static int resCode;
-static unsigned int topicIds[20]; // Support up to 20 topics with int ids.
 static unsigned char hasGrabbedCount = 0, hasShownAuthor = 0, hasShownDate = 0;
+
+#pragma bssseg (push,"BSS")
+#pragma dataseg(push,"BSS")
 
 // Forward declarations of some functions that control game flow. For readability, they are defined later in the file. 
 // (Purist note: these probably belong in a header file. I may do that at some point, if I stop being lazy.)
@@ -193,7 +199,7 @@ void do_init() {
 			if (nesnetConnected) {
 				// If the device is connected, remove connecting message.
 				ppu_off();
-				put_str(NTADR_A(2, 18), "                    ");
+				put_str(NTADR_A(2, 18), "                     ");
 				ppu_on_all();
 			}
 		} else if (nesnetConnectionAttempts == 5) {
@@ -244,19 +250,19 @@ void show_home() {
 		} else if (forumIdB == 0) {
 			forumIdB = *currentChar;
 			if (*currentChar == ':') {
-				forumIds[(currentForumId<<1) + 1] = ' ';
+				forumIds[(currentForumId<<1) + 1] = '\0';
 			} else {
 				forumIds[(currentForumId<<1) + 1] = *currentChar;
-				currentChar++; // Force-skip the colon after this char.
+				++currentChar; // Force-skip the colon after this char.
 
 			}
 			forumIds[currentForumId<<1] = forumIdA;
-			totalForumCount++;
-			currentForumId++;
+			++totalForumCount;
+			++currentForumId;
 		} else {
 			vram_put(*currentChar-0x20);
 		}
-		currentChar++;
+		++currentChar;
 		if (*currentChar == '|') {
 			offset += 0x20;
 			vram_adr(offset);
@@ -274,7 +280,7 @@ void show_home() {
 void do_home() {
 	ppu_wait_nmi();
 	currentPadState = pad_trigger(0);
-	// Undocumented feature - use select to restart.
+	// Undocumented feature - use select to reload.
 	if (currentPadState & PAD_SELECT) {
 		show_home();
 		return;
@@ -420,11 +426,12 @@ void show_topic() {
 	currentUrl[FIRST_CUSTOM_URL_CHAR] 	= '?';
 	currentUrl[FIRST_CUSTOM_URL_CHAR+1] = 'p';
 	currentUrl[FIRST_CUSTOM_URL_CHAR+2] = '=';
-	currentUrl[FIRST_CUSTOM_URL_CHAR+3] = '0' + currentTopicPost;
-	currentUrl[FIRST_CUSTOM_URL_CHAR+4] = '&';
-	currentUrl[FIRST_CUSTOM_URL_CHAR+5] = 't';
-	currentUrl[FIRST_CUSTOM_URL_CHAR+6] = '=';
-	itoa(topicIds[currentTopicPosition], &currentUrl[FIRST_CUSTOM_URL_CHAR+7]);
+	currentUrl[FIRST_CUSTOM_URL_CHAR+3] = '0' + currentTopicPost / 10;
+	currentUrl[FIRST_CUSTOM_URL_CHAR+4] = '0' + currentTopicPost % 10;
+	currentUrl[FIRST_CUSTOM_URL_CHAR+5] = '&';
+	currentUrl[FIRST_CUSTOM_URL_CHAR+6] = 't';
+	currentUrl[FIRST_CUSTOM_URL_CHAR+7] = '=';
+	itoa(topicIds[currentTopicPosition], &currentUrl[FIRST_CUSTOM_URL_CHAR+8]);
 
 	resCode = http_get(currentUrl, theMessage, 500);
 
@@ -448,6 +455,9 @@ void show_topic() {
 	while (*currentChar != '\0') {
 		if (!hasGrabbedCount) {
 			if (*currentChar == '|') {
+				if (forumIdB == 0) {
+					numberOfPosts = forumIdA - '0';
+				}
 				hasGrabbedCount = 1;
 			} else if (forumIdA == 0) {
 				forumIdA = *currentChar;
@@ -455,20 +465,20 @@ void show_topic() {
 				forumIdB = *currentChar;
 				numberOfPosts = ((forumIdA - '0') * 10) + (*currentChar - '0');
 			}
-			currentChar++;
+			++currentChar;
 			continue;
 		} else if (!hasShownAuthor && *currentChar == '|') {
 			hasShownAuthor = 1;
 			vram_adr(0x20a1);
-			currentChar++;
+			++currentChar;
 			continue; // Skip this char but keep going.
 		} else if (!hasShownDate && *currentChar == '|') {
 			hasShownDate = 1;
 			vram_adr(offset);
-			currentChar++;
+			++currentChar;
 			continue; // Skip this char too. Onto the message.
 		} else {
-			ii++;
+			++ii;
 			if (ii % 20 == 0) {
 				offset += 0x20;
 				if (offset >= 0x2380) 
@@ -483,7 +493,7 @@ void show_topic() {
 		}
 
 		vram_put(*currentChar-0x20);
-		currentChar++;
+		++currentChar;
 	}
 	draw_debug_info();
 
@@ -514,7 +524,7 @@ void do_topic() {
 	if (currentPadState & PAD_UP && currentTopicPost > 0) {
 		currentTopicPost--;
 		show_topic();
-	} else if (currentPadState & PAD_DOWN && currentTopicPost < numberOfPosts) {
+	} else if (currentPadState & PAD_DOWN && currentTopicPost < numberOfPosts-1) {
 		currentTopicPost++;
 		show_topic();
 	}
@@ -542,7 +552,7 @@ void show_error() {
 
 	put_str(NTADR_A(2,9), "Content:");
 	put_str(NTADR_A(2,10), theMessage);
-	draw_debug_info();
+	put_str(NTADR_A(1, 27), currentUrl);
 	ppu_on_all();
 	// Deal with a second error coming from our original error state. :(
 	if (gameState != GAME_STATE_ERROR) {
