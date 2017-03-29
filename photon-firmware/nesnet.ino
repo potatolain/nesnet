@@ -9,7 +9,7 @@
 #define NES_DATA D3                                 // Yellow wire
 #define PHOTON_LIGHT 7
 #define LATCH_THRESHOLD 20
-#define FETCH_LATCH_THRESHOLD 60
+#define FETCH_LATCH_THRESHOLD 80
 #define HANDSHAKE_2_WAIT_TIME 0
 
 volatile unsigned char latchedByte = 0;                 // Controller press byte value = one letter in tweet

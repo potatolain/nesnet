@@ -2,6 +2,13 @@
 .import popa,popax,pusha, pushax
 .import _nesnet_buffer
 
+; Some constant you probably don't want to play with here. They aren't particularly clear in what they do w/o looking at code.
+; If you know what you're doing, have at!
+.define INCOMING_BYTE_DELAY 50 ; How long do we wait between incoming bytes?
+.define OUTGOING_BIT_DELAY 250 ; How much delay do we put between each bit we send out in order to tell the fake "controller" 1/0?
+.define NESNET_RESPONSE_WAIT_TIME 75 ; How long do we wait for a response from the controller before giving up?
+
+
 ; Note: Since ca65 is kind of a pain, all exports are at the bottom. 
 ; If you really want to see what you can do though, the details should all be in nesnet.h :)
 
@@ -38,10 +45,6 @@
 	lda #0
 	sta $4016
 .endmacro
-
-.define INCOMING_BYTE_DELAY 50 ; How long do we wait between incoming bytes?
-.define OUTGOING_BIT_DELAY 200 ; How much delay do we put between each bit we send out in order to tell the fake "controller" 1/0?
-.define NESNET_RESPONSE_WAIT_TIME 50 ; How long do we wait for a response from the controller before giving up?
 
 .scope HttpLib ; Use a separate scope to encapsulate some variables we use.
 
