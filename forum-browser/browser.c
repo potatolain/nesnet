@@ -341,6 +341,7 @@ void show_forum() {
 	j = 0;
 	jj = 0;
 	ii = 0;
+	hasHitColon = FALSE;
 
 	while (*currentChar != '\0') {
 		// For now, just skip the id. We'll get there.
@@ -348,7 +349,7 @@ void show_forum() {
 			topicIds[j] = 0;
 			for (i = 0; jj + i < ii; i++) {
 				if (theMessage[jj+i] >= '0' && theMessage[jj+i] <= '9') {
-					topicIds[j] = topicIds[j]*10 + (theMessage[jj+i] - '0');
+					topicIds[j] = (topicIds[j]*10) + (theMessage[jj+i] - '0');
 				}
 			}
 			hasHitColon = TRUE;
@@ -363,6 +364,7 @@ void show_forum() {
 			offset += 0x20;
 			vram_adr(offset);
 			currentChar++;
+			ii++;
 			totalTopicCount++;
 		}
 
