@@ -1,9 +1,9 @@
-/**
- * NESNet
- * Send http requests from your NES games! 
- * Licensed under the MIT license.
- */
- 
+;
+; NESNet
+; Send http requests from your NES games! 
+; Licensed under the MIT license.
+;
+
 .feature c_comments
 .import popa,popax,pusha, pushax
 .import _nesnet_buffer
