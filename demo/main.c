@@ -88,7 +88,7 @@ void main(void) {
 			set_vram_update(screenBuffer);
 		} else if (currentPadState & PAD_SELECT) {
 			callCount++;
-			http_get("http://cpprograms.net:80/devnull/word.php?1=22", theMessage);
+			http_get("http://cpprograms.net:80/devnull/word.php?1=22", theMessage, 16);
 			
 			screenBuffer[0] = MSB(NTADR_A(2, 14)) | NT_UPD_HORZ;
 			screenBuffer[1] = LSB(NTADR_A(2, 14));
