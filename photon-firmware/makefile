@@ -15,10 +15,10 @@ COMMAND=particle
 all: bin/firmware.bin
 
 bin/firmware.bin: nesnet.ino
-	$(COMMAND) compile photon . --saveTo bin/firmware.bin
+	$(COMMAND) compile photon . --saveTo bin/photon_firmware.bin
 	
 flash:
-	$(COMMAND) flash $(PHOTON_NAME) "bin/firmware.bin"
+	$(COMMAND) flash $(PHOTON_NAME) "bin/photon_firmware.bin"
 
 clean:
 	-rm -f bin/*.bin
