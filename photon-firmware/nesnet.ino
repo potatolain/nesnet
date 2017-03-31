@@ -127,7 +127,7 @@ void loop() {                                       // 'Round and 'round we go
             tweetData[3] = 200;
             tweetData[4] = 1; // NOTE: The 1s here are actually zeroes... we have a hack in place that decrements this. See comment in main http section.
             tweetData[5] = 7;
-            tweetData[6] = 1; // FIXME: Remove hack
+            tweetData[6] = 1;
             for (int i = 0; i < 7; i++) {
                 tweetData[7+i] = "TEST OK"[i];
             }

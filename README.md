@@ -129,7 +129,8 @@ Coming soon... the short version is, follow the instructions to install everythi
 
 ## How Do I use the library?
 
-Coming soon... the short version is, see the "What does Code look like" section above.
+Coming soon... the short version is, see the "What does Code look like" section above. Also be sure to flash the photon
+with the custom nesnet firmware. Link coming soon!
 
 ## How can I build the photon firmware?
 
