@@ -99,9 +99,6 @@ void setup() {
     pinMode(PHOTON_LIGHT, OUTPUT);                             // Turn off the Photon's on-board LED
     digitalWrite(PHOTON_LIGHT, LOW);                           //
     
-    //Particle.variable("received", receivedBytes, STRING);
-    //Particle.variable("response", &tweetData[5], STRING);
-    
     setupData();
 }
 
@@ -210,11 +207,9 @@ void LatchNES() {
             hasGottenHandshake = true;
             gazornenplat = false;
             
-            // blah
             receivingData = true;
             currentBit = 0;
             currentByte = 0;
-            //
             
             digitalWrite(PHOTON_LIGHT, HIGH);
             setupData();

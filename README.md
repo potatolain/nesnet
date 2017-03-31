@@ -127,6 +127,8 @@ NES controller, connect the NES wires to the photon as follows:
 
 Coming soon... the short version is, follow the instructions to install everything in the tools folders, then `make`
 
+You'll also need Gow (GNU on Windows)
+
 ## How Do I use the library?
 
 Coming soon... the short version is, see the "What does Code look like" section above. Also be sure to flash the photon
@@ -154,3 +156,13 @@ Link coming soon!
 # How can I contribute?
 
 Just send a PR! There aren't any hard-and-fast rules right now. I'm sure we can work out any changes you might suggest.
+
+# Credits
+
+[ConnectedNES](http://nobadmemories.com/connectednes/) by [Rachel Simone Weil](http://nobadmemories.com) for inspiration and hardware. 
+
+[HttpClient](https://github.com/nmattisson/HttpClient) by [nmattisson](http://nmattisson.com/) for http requests from the photon.
+
+[After The Rain](http://shiru.untergrund.net/music.shtml) by [Shiru](http://shiru.untergrund.net/) for browser music.
+
+If I'm missed anyone/anything, let me know! It's not intentional, I promise.

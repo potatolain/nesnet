@@ -21,4 +21,4 @@ flash:
 	$(COMMAND) flash $(PHOTON_NAME) "bin/firmware.bin"
 
 clean:
-	-rm -f bin/*
+	-rm -f bin/*.bin
