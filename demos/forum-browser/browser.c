@@ -1,6 +1,7 @@
-// This is a test program for some NES networking stuff I'm gonna do.
+// Test program to demonstrate NESNet
+// Forum browser for the nesdev.com forums using RSS feeds as a source.
 #include "lib/neslib.h"
-#include "../src/nesnet.h"
+#include "../../src/nesnet.h"
 
 #define GAME_STATE_INIT 0
 #define GAME_STATE_HOME 1

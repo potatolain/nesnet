@@ -1,6 +1,6 @@
 ; Startup code for cc65 and Shiru's NES library
 ; based on code by Groepaz/Hitmen <groepaz@gmx.net>, Ullrich von Bassewitz <uz@cc65.org>
-.include "../src/nesnet_config.asm"
+.include "../../src/nesnet_config.asm"
 
 
 FT_DPCM_OFF				= $c000		;$c000..$ffc0, 64-byte steps
@@ -92,7 +92,7 @@ RLE_HIGH	=TEMP+1
 RLE_TAG		=TEMP+2
 RLE_BYTE	=TEMP+3
 
-.include "../src/nesnet_zp.asm"
+.include "../../src/nesnet_zp.asm"
 
 
 .segment "HEADER"
@@ -234,13 +234,12 @@ detectNTSC:
 	jmp _main			;no parameters
 
 	.include "lib/neslib.asm"
-	.include "../src/nesnet.asm"
+	.include "../../src/nesnet.asm"
 
 .segment "RODATA"
 
 music_data:
 	;.include "../sound/music.s"
-	.include "sound/combined.s"
 
 	.if(FT_SFX_ENABLE)
 sounds_data:

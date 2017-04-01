@@ -27,7 +27,7 @@ all: browser.s lib/crt0.o browser.o browser.nes
 browser.s: browser.c 
 	$(MAIN_COMPILER) -Oi browser.c --add-source --include-dir ./tools/cc65/include
 	
-lib/crt0.o: lib/crt0.asm ../src/nesnet.asm ../src/nesnet.h
+lib/crt0.o: lib/crt0.asm ../../src/nesnet.asm ../../src/nesnet.h
 	$(MAIN_ASM_COMPILER) lib/crt0.asm
 
 browser.o: browser.s
