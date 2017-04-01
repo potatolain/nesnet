@@ -12,6 +12,8 @@
 #define FETCH_LATCH_THRESHOLD 80
 #define HANDSHAKE_2_WAIT_TIME 0
 
+// NOTE: Everything being volatile like this is really sloppy. It's probably costing some time. (Though, maybe not much since
+// the photon can run laps around the NES...)
 volatile unsigned char latchedByte = 0;                 // Controller press byte value = one letter in tweet
 volatile unsigned char bitCount = 0;                    // A single LDA $4017 (get one bit from "controller press")
 volatile unsigned int byteCount = 0;                   // How many bytes have already been printed
