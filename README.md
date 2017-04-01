@@ -161,6 +161,8 @@ Just send a PR! There aren't any hard-and-fast rules right now. I'm sure we can 
 
 [ConnectedNES](http://nobadmemories.com/connectednes/) by [Rachel Simone Weil](http://nobadmemories.com) for inspiration and hardware. 
 
+[NESLib](https://shiru.untergrund.net/software.shtml) by [Shiru](http://shiru.untergrund.net/) for basically everything that makes the demo work.
+
 [HttpClient](https://github.com/nmattisson/HttpClient) by [nmattisson](http://nmattisson.com/) for http requests from the photon.
 
 [After The Rain](http://shiru.untergrund.net/music.shtml) by [Shiru](http://shiru.untergrund.net/) for browser music.
