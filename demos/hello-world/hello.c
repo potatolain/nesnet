@@ -104,7 +104,11 @@ void show_connection_failure() {
 void show_the_message(char* whatIsThis) {
 	ppu_off();
 	show_boilerplate();
-	put_str(NTADR_A(2, 18), whatIsThis);
+	if (resCode == 200) {
+		put_str(NTADR_A(2, 18), whatIsThis);
+	} else {
+		put_str(NTADR_A(2, 18), "Encountered error getting response:");
+	}
 	put_str(NTADR_A(2, 20), theMessage);
 	ppu_on_all();
 }
