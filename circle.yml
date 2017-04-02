@@ -1,0 +1,30 @@
+# TODO: Can we cache particle-cli reliably?
+dependencies: 
+  pre: 
+    - npm install -g particle-cli
+# Set through Particle CLI
+    - particle login $PARTICLE_USER $PARTICLE_PW
+    - if [ ! -f demos/hello-world/tools/cc65/bin/cc65 ]; then mkdir -p demos/hello-world/tools/cc65-temp; fi
+    - if [ ! -f demos/hello-world/tools/cc65/bin/cc65 ]; then cd demos/hello-world/tools/cc65-temp/ && wget ftp://ftp.musoftware.de/pub/uz/cc65/cc65-sources-2.13.3.tar.bz2 && tar xvjf cc65-sources-2.13.3.tar.bz2; fi
+    - if [ ! -f demos/hello-world/tools/cc65/bin/cc65 ]; then cd demos/hello-world/tools/cc65-temp/cc65-2.13.3 && make --file=make/gcc.mak; fi
+    - if [ ! -f demos/hello-world/tools/cc65/bin/cc65 ]; then  mv demos/hello-world/tools/cc65-temp/cc65-2.13.3/* demos/hello-world/tools/cc65; fi
+    - mkdir -p demos/hello-world/tools/cc65/bin
+    - find demos/hello-world/tools/cc65 -type f -executable -exec cp {} demos/hello-world/tools/cc65/bin/ \;
+    - rm -rf demos/forum-browser/tools/cc65
+    - cd demos/forum-browser/tools && ln -s ../../hello-world/tools/cc65 cc65
+  override: 
+    - echo No proper dep install beyond this
+  cache_directories: 
+    - "demos/hello-world/tools/cc65"
+compile: 
+  override: 
+    - cd demos/hello-world && make
+    - cd demos/forum-browser && make
+    - cd photon-firmware && make
+test: 
+  override: 
+    - echo Tests not defined. Can we make sure we got a valid rom to start?
+  post: 
+    - cp demos/hello-world/hello.nes $CIRCLE_ARTIFACTS/hello.nes
+    - cp demos/forum-browser/browser.nes $CIRCLE_ARTIFACTS/browser.nes
+    - cp photon-firmware/bin/photon_firmware.bin $CIRCLE_ARTIFACTS/photon_firmware.bin
