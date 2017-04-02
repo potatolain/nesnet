@@ -92,8 +92,14 @@ it up.
    put nesnet.asm into the same folder.
 
 You will also need to set up the particle photon, and flash it with the custom nesnet firmware. Find it on the
-releases page. You can flash using `particle-cli`, or using the web-based editor. Follow the instructions that
-come with the device and online for this.
+releases page. You can flash using `particle-cli`. Use the following steps:
+```sh
+# Only have to do this the first time you set up. You can run the last command again to update to a newer 
+# downloaded firmware.
+npm install -g particle-cli 
+particle login
+particle flash your_device_name_here ./photon_firmware.bin
+```
 
 After that, use it as you'd use any other library. 
 
@@ -125,10 +131,13 @@ You'll also need Gow (GNU on Windows) for Windows machines.
 
 ## How can I build the photon firmware?
 
-First off, you shouldn't have to do this. The provided photon firmware should work with the C library as-is. If 
-you'd like to, by all means. Otherwise, feel free to skip this step and use the pre-made firmware.
+Note that you don't have to do this. You can download the latest artifact from CI (link at top of readme) and flash
+it using the steps in the "How do I Use This Library in my C Project" section. That said, it is just about as easy
+to do, especially if you are working with it directly.
 
-Check the "releases" section of github and download photon_firmware.bin for use.
+First, make sure particle-cli is installed globally, and you have logged in. Next, go to the `photon-firmware` 
+directory and run `make`. It should be that simple. If you'd like to flash your firmware, you can run `make flash`.
+(Note: This assumes your photon is named "hamster_nes" - change the name in photon-firmware/makefile.
 
 # What known caveats/issues does the system have?
 

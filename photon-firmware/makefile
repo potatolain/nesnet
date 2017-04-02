@@ -12,9 +12,9 @@ COMMAND=particle
 
 ### USER EDITABLE STUFF ENDS HERE
 
-all: bin/firmware.bin
+all: bin/photon_firmware.bin
 
-bin/firmware.bin: nesnet.ino
+bin/photon_firmware.bin: nesnet.ino
 	$(COMMAND) compile photon . --saveTo bin/photon_firmware.bin
 	
 flash:
