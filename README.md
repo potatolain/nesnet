@@ -1,10 +1,12 @@
-# NESNET
+# NESNET [![CircleCI](https://circleci.com/gh/cppchriscpp/nesnet.svg?style=svg)](https://circleci.com/gh/cppchriscpp/nesnet)
 
 Ever want to make an internet-enabled NES game? Now you can! All it takes is a little C knowledge and some time.
 
 **Important**: This project is very much a work in progress. While this will work for basic cases, it's not what
 I'd call production-ready code. Requests will sometimes fail, data may be wrong, etc. This is a hobbyist's toy, 
 so please treat it that way.
+
+[Latest Roms and Firmware from CI](https://circleci.com/gh/cppchriscpp/nesnet/45#artifacts/containers/0)
 
 ## What is this?
 
