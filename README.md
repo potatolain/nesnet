@@ -6,7 +6,10 @@ Ever want to make an internet-enabled NES game? Now you can! All it takes is a l
 I'd call production-ready code. Requests will sometimes fail, data may be wrong, etc. This is a hobbyist's toy, 
 so please treat it that way.
 
-[Latest Roms and Firmware from CI](https://circleci.com/gh/cppchriscpp/nesnet/45#artifacts/containers/0)
+### Latest CI Artifacts (master branch)
+-  [Photon Firmware](https://circleci-tkn.rhcloud.com/api/v1/project/cppchriscpp/nesnet/tree/master/latest/artifacts/photon_firmware.bin)
+-  [Basic Demo Rom](https://circleci-tkn.rhcloud.com/api/v1/project/cppchriscpp/nesnet/tree/master/latest/artifacts/hello.nes)
+-  [Forum Browser Rom](https://circleci-tkn.rhcloud.com/api/v1/project/cppchriscpp/nesnet/tree/master/latest/artifacts/browser.nes)
 
 ## What is this?
 
