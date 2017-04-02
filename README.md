@@ -121,14 +121,6 @@ After that, use it as you'd use any other library.
 - **Returns**: Integer representing http response code. (200 OK, 404 Not found, etc)
 - **Description**: Does an http get request, and puts the response into a character array.
 
-
-## How do I set up a development environment to build one of the demos?
-
-Coming soon... the short version is, follow the instructions to install everything in the tools folders, then `make`
-
-You'll also need Gow (GNU on Windows) for Windows machines.
-
-
 ## How can I build the photon firmware?
 
 Note that you don't have to do this. You can download the latest artifact from CI (link at top of readme) and flash
@@ -138,6 +130,33 @@ to do, especially if you are working with it directly.
 First, make sure particle-cli is installed globally, and you have logged in. Next, go to the `photon-firmware` 
 directory and run `make`. It should be that simple. If you'd like to flash your firmware, you can run `make flash`.
 (Note: This assumes your photon is named "hamster_nes" - change the name in photon-firmware/makefile.
+
+
+## How do I set up a development environment to build one of the demos?
+
+### Operating System Specifics
+
+#### Windows
+- Install [Gow](https://github.com/bmatzelle/gow/wiki) (GNU On Windows) or Cygwin to get certain unix commands.
+- Download the [older Windows version of cc65](ftp://ftp.musoftware.de/pub/uz/cc65/cc65-win32-2.13.3-1.zip) and extract
+  it to the tools/cc65 folder in the demo. tools/cc65/bin/cc65 should be an executable
+
+#### Linux (Tested on Ubuntu)
+- Download the [older version of the cc65 source code](ftp://ftp.musoftware.de/pub/uz/cc65/cc65-sources-2.13.3.tar.bz2)
+  and extract it to the tools/cc65 folder.
+- Build cc65 for your system. Run `make --file="make/gcc.mak"`
+- Create the tools/cc65/bin folder manually. You can use this: 
+  ```sh
+  mkdir -p tools/cc65/bin
+  find tools/cc65 -type f -executable -exec cp {} tools/cc65/bin/ \;
+  ```
+
+### Universal
+
+At this point, you should be able to run `make` in the the base folder for the demo and build it. There are other tools
+and commands built into the makefile. See the various readme files in the tools folder for more details. A rom file will
+be built in the base folder.
+
 
 # What known caveats/issues does the system have?
 
