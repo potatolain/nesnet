@@ -14,6 +14,11 @@
 .define OUTGOING_BIT_DELAY 250 ; How much delay do we put between each bit we send out in order to tell the fake "controller" 1/0?
 .define NESNET_RESPONSE_WAIT_TIME 75 ; How long do we wait for a response from the controller before giving up?
 
+.define HTTP_GET 		'G'
+.define HTTP_PUT 		'U'
+.define HTTP_POST		'P'
+.define HTTP_DELETE		'D'
+
 
 ; Note: Since ca65 is kind of a pain, all exports are at the bottom. 
 ; If you really want to see what you can do though, the details should all be in nesnet.h :)
@@ -118,52 +123,17 @@
 
 		jsr NESNET_WAIT_NMI
 
-	; ========== START EXTREMELY TIME SENSITIVE CODE ==========
-
-		; If you change anything in here, be ready to adjust the photon firmware to match.
-		; Also realize any changes will have a serious
-		; impact on the speed of up/down, so BE CAREFUL. You have been warned.
-
-		; Numbers on the left are timings in clock cycles, where applicable. 1 clock cycle ~= 559ns on ntsc
+		lda #HTTP_GET
+		jsr send_byte_to_nes
 
 		; Okay, time to send some data over.
 		ldy #0
 		@string_loop:
-			ldx #0
-			@byte_loop: ; TODO: loop this 3 times.
+			lda (URL), y
+			cmp #0
+			beq @break_loop
 
-/* 5-6 */		lda (URL), y
-/* 2   */		cmp #0
-/* 2   */		beq @break_loop
-/* 4-5 */		and byte_to_bit_lookup, x ; Get the bit we're looking for from a simple lookup table
-
-/* 2   */		cmp #0
-/* 2   */		beq @zero 			; Timing note: adds 1-2 if it jumps to zero.
-/* 12  */			trigger_latch ; Putting these right next to eachother makes it easier to determine what is/isn't a match.
-/* 12  */			trigger_latch
-/* 3   */			jmp @after_data
-				@zero: 
-/* 1-2 */			; From branch
-/* 12 */			trigger_latch
-/* 2 */				nop
-/* 2 */				nop
-/* 2 */				nop
-/* 2 */				nop
-/* 2 */				nop
-/* 2 */				nop
-/* 3 */				jmp @after_data ; Keeping things in sync
-				@after_data:
-				phx
-				ldx #0
-				@loop:
-					nop
-					inx
-					cpx #OUTGOING_BIT_DELAY
-					bne @loop
-				plx
-				inx
-				cpx #8
-				bne @byte_loop
+			jsr send_byte_to_nes
 			iny
 			tya
 			and #%00001111
@@ -328,6 +298,44 @@ test_connection:
 		lda #0
 		ldx #0
 		rts
+
+send_byte_to_nes: 
+			sta _nesnet_buffer+19
+			ldx #0
+			@byte_loop: ; TODO: loop this 3 times, like we do in the other direction?
+
+				lda _nesnet_buffer+19
+				and byte_to_bit_lookup, x ; Get the bit we're looking for from a simple lookup table
+
+/* 2   */		cmp #0
+/* 2   */		beq @zero 			; Timing note: adds 1-2 if it jumps to zero.
+/* 12  */			trigger_latch ; Putting these right next to eachother makes it easier to determine what is/isn't a match.
+/* 12  */			trigger_latch
+/* 3   */			jmp @after_data
+				@zero: 
+/* 1-2 */			; From branch
+/* 12 */			trigger_latch
+/* 2 */				nop
+/* 2 */				nop
+/* 2 */				nop
+/* 2 */				nop
+/* 2 */				nop
+/* 2 */				nop
+/* 3 */				jmp @after_data ; Keeping things in sync cycles-wise.
+				@after_data:
+				phx
+				ldx #0
+				@loop:
+					nop
+					inx
+					cpx #OUTGOING_BIT_DELAY
+					bne @loop
+				plx
+				inx
+				cpx #8
+				bne @byte_loop
+			rts
+
 
 .endscope
 get_pad_values: 

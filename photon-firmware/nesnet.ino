@@ -12,6 +12,13 @@
 #define FETCH_LATCH_THRESHOLD 80
 #define HANDSHAKE_2_WAIT_TIME 0
 
+// Available request types 
+#define HTTP_GET 		'G'
+#define HTTP_PUT 		'U'
+#define HTTP_POST		'P'
+#define HTTP_DELETE		'D'
+
+
 // NOTE: Everything being volatile like this is really sloppy. It's probably costing some time. (Though, maybe not much since
 // the photon can run laps around the NES...)
 volatile unsigned char latchedByte = 0;                 // Controller press byte value = one letter in tweet
@@ -21,7 +28,7 @@ volatile unsigned char incomingBitCount = 0;
 volatile unsigned int incomingByteCount = 0;
 
 volatile unsigned char tweetData[550];                       // Array that will hold 192 hex values representing tweet data      
-char receivedBytes[100];
+char receivedBytes[500];
 volatile unsigned long currentTime = 0;
 volatile unsigned long lastTime = 0;
 volatile bool readyToSendBytes = 0;
@@ -119,7 +126,7 @@ void loop() {                                       // 'Round and 'round we go
     }
     if (finishedReceivingData && !hasFormattedData) {
         int16_t temp;
-        if (strcmp(receivedBytes, "/test") == 0) {
+        if (strcmp(receivedBytes, "G/test") == 0) {
             tweetData[0] = 255;
             tweetData[1] = 'W';
             tweetData[2] = 'F';
@@ -173,7 +180,8 @@ void ClockNES() {
 /////////////////////////////////////////
 
 void GetNetResponse() {
-    String fullUrl = String(receivedBytes);
+    // Url skips the first character
+    String fullUrl = String(receivedBytes+1);
     int colonPos = fullUrl.indexOf(':');
     int slashPos = fullUrl.indexOf('/');
     if (colonPos != -1) {
@@ -189,8 +197,14 @@ void GetNetResponse() {
     // The library also supports sending a body with your request:
     //request.body = "{\"key\":\"value\"}";
 
-    // Get request
-    http.get(request, response, headers);
+    // What kind of request do we wanna make today? Or... do we need to get more from the NES?
+    if (receivedBytes[0] == HTTP_GET) {
+        // Get request
+        http.get(request, response, headers);
+        // TODO: Implement PUT/POST... Thinking wait for /0 for the main string, then 1 (or 2?) byte length, then data.
+    } else {
+        Particle.publish("unkEvtType", receivedBytes);
+    }
 }
     
 /////////////////////////////////////////

@@ -1,6 +1,8 @@
 #ifndef NESNET_H
 #define NESNET_H
+
 // Reserving 20 non-zp bytes for internal use. Don't touch these unless you'd like to be sad.
+// TODO: Can we drop this to maybe 10 or 5 bytes? Currently only used for the test method.
 unsigned char nesnet_buffer[20];
 
 /**
