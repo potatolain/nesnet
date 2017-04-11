@@ -89,37 +89,7 @@
 		adc #0
 		sta URL+1
 
-		; Artificial delay before sending handshake, so we don't get any false positives if the game triggered a latch recently.
-		; TODO: This is probably overzealous
-		ldy #0
-		ldx #0
-		@loop_wait1:
-			nop
-			iny
-			cpy #0
-			bne @loop_wait1
-			inx
-			cpx #120
-			bne @loop_wait1
-
-
-		; TODO: Make a real handshake so we stop triggering the stupid powerpak
-		.repeat 8
-			trigger_latch
-		.endrepeat
-		
-		; Dumb noop loop to waste some time before polling the pad yet again.
-		; TODO: This is probably overzealous
-		ldy #0
-		ldx #0
-		@loop_wait:
-			nop
-			iny
-			cpy #0
-			bne @loop_wait
-			inx
-			cpx #120
-			bne @loop_wait
+		jsr do_handshake
 
 		jsr NESNET_WAIT_NMI
 
@@ -146,22 +116,89 @@
 		@break_loop:
 
 		; Finally, send a 0 byte
-		.repeat 8, J ; TODO: This could be a loop?
-			.scope .ident(.concat("derrup", .string(J))) ; Hack to shut up the local @things
-				trigger_latch
-					ldx #0
-					@loop_0:
-						nop
-						inx
-						cpx #OUTGOING_BIT_DELAY
-						bne @loop_0
-			.endscope
-		.endrepeat
-
-	; ========== END TIME SENSITIVE SECTION ==========
+		lda #0
+		jsr send_byte_to_nes
 
 		jsr NESNET_WAIT_NMI
 
+		jsr get_nes_response
+		
+		rts
+
+test_connection:
+	lda #<(test_url)
+	ldx #>(test_url)
+	jsr pushax
+	lda #<(_nesnet_buffer)
+	ldx #>(_nesnet_buffer)
+	jsr pushax
+
+	; Desired length is length of buffer... 4 whole bytes.
+	lda #4
+	ldx #0
+
+	jsr get
+	
+	lda _nesnet_buffer
+	cmp #'T'
+	bne @bad_end
+	lda _nesnet_buffer+1
+	cmp #'E'
+	bne @bad_end
+	lda _nesnet_buffer+2
+	cmp #'S'
+	bne @bad_end
+	lda _nesnet_buffer+3
+	cmp #'T'
+	bne @bad_end
+	@happy_end: 
+		lda #1
+		ldx #0
+		rts
+	@bad_end:
+		lda #0
+		ldx #0
+		rts
+
+send_byte_to_nes: 
+			sta _nesnet_buffer+19
+			ldx #0
+			@byte_loop: ; TODO: loop this 3 times, like we do in the other direction?
+
+				lda _nesnet_buffer+19
+				and byte_to_bit_lookup, x ; Get the bit we're looking for from a simple lookup table
+
+/* 2   */		cmp #0
+/* 2   */		beq @zero 			; Timing note: adds 1-2 if it jumps to zero.
+/* 12  */			trigger_latch ; Putting these right next to eachother makes it easier to determine what is/isn't a match.
+/* 12  */			trigger_latch
+/* 3   */			jmp @after_data
+				@zero: 
+/* 1-2 */			; From branch
+/* 12 */			trigger_latch
+/* 2 */				nop
+/* 2 */				nop
+/* 2 */				nop
+/* 2 */				nop
+/* 2 */				nop
+/* 2 */				nop
+/* 3 */				jmp @after_data ; Keeping things in sync cycles-wise.
+				@after_data:
+				phx
+				ldx #0
+				@loop:
+					nop
+					inx
+					cpx #OUTGOING_BIT_DELAY
+					bne @loop
+				plx
+				inx
+				cpx #8
+				bne @byte_loop
+			rts
+
+
+get_nes_response:
 		ldx #0
 		ldy #0
 		@loop_zero:
@@ -254,9 +291,8 @@
 		; Put response code into return value.
 		lda URL
 		ldx URL+1
-		
-		rts
-
+	rts
+	; Part of the above method... if all goes wrong, tell us.
 	@get_complete_failure:
 		lda #0
 		sta (RESPONSE), y
@@ -264,77 +300,40 @@
 		ldx #>(599)
 		rts
 
-test_connection:
-	lda #<(test_url)
-	ldx #>(test_url)
-	jsr pushax
-	lda #<(_nesnet_buffer)
-	ldx #>(_nesnet_buffer)
-	jsr pushax
 
-	; Desired length is length of buffer... 4 whole bytes.
-	lda #4
+do_handshake:
+	; Artificial delay before sending handshake, so we don't get any false positives if the game triggered a latch recently.
+	; TODO: This is probably overzealous
+	ldy #0
 	ldx #0
+	@loop_wait1:
+		nop
+		iny
+		cpy #0
+		bne @loop_wait1
+		inx
+		cpx #120
+		bne @loop_wait1
 
-	jsr get
+
+	; TODO: Make a real handshake so we stop triggering the stupid powerpak
+	.repeat 8
+		trigger_latch
+	.endrepeat
 	
-	lda _nesnet_buffer
-	cmp #'T'
-	bne @bad_end
-	lda _nesnet_buffer+1
-	cmp #'E'
-	bne @bad_end
-	lda _nesnet_buffer+2
-	cmp #'S'
-	bne @bad_end
-	lda _nesnet_buffer+3
-	cmp #'T'
-	bne @bad_end
-	@happy_end: 
-		lda #1
-		ldx #0
-		rts
-	@bad_end:
-		lda #0
-		ldx #0
-		rts
-
-send_byte_to_nes: 
-			sta _nesnet_buffer+19
-			ldx #0
-			@byte_loop: ; TODO: loop this 3 times, like we do in the other direction?
-
-				lda _nesnet_buffer+19
-				and byte_to_bit_lookup, x ; Get the bit we're looking for from a simple lookup table
-
-/* 2   */		cmp #0
-/* 2   */		beq @zero 			; Timing note: adds 1-2 if it jumps to zero.
-/* 12  */			trigger_latch ; Putting these right next to eachother makes it easier to determine what is/isn't a match.
-/* 12  */			trigger_latch
-/* 3   */			jmp @after_data
-				@zero: 
-/* 1-2 */			; From branch
-/* 12 */			trigger_latch
-/* 2 */				nop
-/* 2 */				nop
-/* 2 */				nop
-/* 2 */				nop
-/* 2 */				nop
-/* 2 */				nop
-/* 3 */				jmp @after_data ; Keeping things in sync cycles-wise.
-				@after_data:
-				phx
-				ldx #0
-				@loop:
-					nop
-					inx
-					cpx #OUTGOING_BIT_DELAY
-					bne @loop
-				plx
-				inx
-				cpx #8
-				bne @byte_loop
-			rts
+	; Dumb noop loop to waste some time before polling the pad yet again.
+	; TODO: This is probably overzealous
+	ldy #0
+	ldx #0
+	@loop_wait:
+		nop
+		iny
+		cpy #0
+		bne @loop_wait
+		inx
+		cpx #120
+		bne @loop_wait
+	rts
 
 
 .endscope
