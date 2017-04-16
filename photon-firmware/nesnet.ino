@@ -14,9 +14,9 @@
 
 // Available request types 
 #define HTTP_GET 		'G'
-#define HTTP_PUT 		'U'
-#define HTTP_POST		'P'
-#define HTTP_DELETE		'D'
+#define HTTP_PUT 		'E'
+#define HTTP_POST		'A'
+#define HTTP_DELETE		'C'
 
 
 // NOTE: Everything being volatile like this is really sloppy. It's probably costing some time. (Though, maybe not much since
@@ -26,9 +26,12 @@ volatile unsigned char bitCount = 0;                    // A single LDA $4017 (g
 volatile unsigned int byteCount = 0;                   // How many bytes have already been printed
 volatile unsigned char incomingBitCount = 0;
 volatile unsigned int incomingByteCount = 0;
+volatile unsigned int incomingPostByteCount = 0;
 
 volatile unsigned char tweetData[550];                       // Array that will hold 192 hex values representing tweet data      
 char receivedBytes[500];
+char receivedPostData[1000];
+volatile char currentRequestType;
 volatile unsigned long currentTime = 0;
 volatile unsigned long lastTime = 0;
 volatile bool readyToSendBytes = 0;
@@ -36,6 +39,8 @@ volatile bool hasGottenHandshake = 0;
 volatile bool hasGottenHandshake1 = 0;
 volatile bool receivingData = 0;
 volatile bool finishedReceivingData = 0;
+volatile bool finishedReceivingPostData = 0;
+volatile int postDataLength = 0;
 volatile bool currentBit = 0;
 volatile unsigned char currentByte = 0;
 volatile bool gazornenplat = 0;
@@ -45,6 +50,7 @@ volatile unsigned long a, b;
 volatile bool hasFormattedData = 0;
 volatile bool hasByteLatched = 0;
 volatile unsigned char repeatCount = 0;
+volatile bool gotPostDataLength = 0;
 HttpClient http;
 
 volatile byte numLatches = 0;
@@ -68,6 +74,7 @@ void setupData() {
     latchedByte = 0;
     bitCount = 0;
     finishedReceivingData = 0;
+    finishedReceivingPostData = 0;
     incomingBitCount = 0;
     incomingByteCount = 0;
     currentByte = 0;
@@ -75,6 +82,10 @@ void setupData() {
     currentBit = 0;
     receivingData = 0;
     hasByteLatched = 0;
+    postDataLength = 0;
+    incomingPostByteCount = 0;
+    gotPostDataLength = 0;
+    currentRequestType = HTTP_GET;
 
     hasFormattedData = 0;
     
@@ -83,6 +94,8 @@ void setupData() {
         receivedBytes[i] = 0;
     for (i = 0; i < 550; i++)
         tweetData[i] = 0;
+    for (i = 0; i < 1000; i++)
+        receivedPostData[i] = 0;
         
     experiment = 0;
     repeatCount = 0;
@@ -124,7 +137,7 @@ void loop() {                                       // 'Round and 'round we go
         
 
     }
-    if (finishedReceivingData && !hasFormattedData) {
+    if (finishedReceivingData && (finishedReceivingPostData || currentRequestType == HTTP_GET || currentRequestType == HTTP_DELETE) && !hasFormattedData) {
         int16_t temp;
         if (strcmp(receivedBytes, "G/test") == 0) {
             tweetData[0] = 255;
@@ -194,14 +207,21 @@ void GetNetResponse() {
         request.path = fullUrl.substring(slashPos);
     }
 
-    // The library also supports sending a body with your request:
-    //request.body = "{\"key\":\"value\"}";
-
     // What kind of request do we wanna make today? Or... do we need to get more from the NES?
     if (receivedBytes[0] == HTTP_GET) {
         // Get request
+        request.body = NULL;
         http.get(request, response, headers);
         // TODO: Implement PUT/POST... Thinking wait for /0 for the main string, then 1 (or 2?) byte length, then data.
+    } else if (receivedBytes[0] == HTTP_POST) {
+        request.body = String(receivedPostData);
+        http.post(request, response, headers);
+    } else if (receivedBytes[0] == HTTP_PUT) {
+        request.body = String(receivedPostData);
+        http.put(request, response, headers);
+    } else if (receivedBytes[0] == HTTP_DELETE) { 
+        request.body = NULL;
+        http.del(request, response, headers);
     } else {
         Particle.publish("unkEvtType", receivedBytes);
     }
@@ -235,7 +255,7 @@ void LatchNES() {
         currentByte = 0;
         currentBit = 1; // TODO: Why is this necessary?
         a = micros();
-    } else if (receivingData && !finishedReceivingData) {
+    } else if (receivingData && (!finishedReceivingData || ((currentRequestType == HTTP_POST || currentRequestType == HTTP_PUT) && !finishedReceivingPostData))) {
         if (micros() - lastLoadBearingLatch < FETCH_LATCH_THRESHOLD) {
             // If we get a second latch signal before our next expected one, this signifies a one.
             // If we don't, currentBit will keep stay at zero, and go again.
@@ -245,11 +265,29 @@ void LatchNES() {
             incomingBitCount++;
             if (incomingBitCount == 8) {
                 incomingBitCount = 0;
-                receivedBytes[incomingByteCount] = currentByte;
-                incomingByteCount++;
-                if (currentByte == 0 && incomingByteCount > 1) { // TODO: Do length-based transfer, instead of null-terminated strings. Imagine binary data for payload.
+                if (incomingByteCount == 0)
+                    currentRequestType = currentByte;
+                if (!finishedReceivingData) {
+                    receivedBytes[incomingByteCount] = currentByte;
+                    incomingByteCount++;
+                } else { 
+                    if (incomingPostByteCount == 0) {
+                        postDataLength = currentByte & 0xff;
+                    } else if (incomingPostByteCount == 1) {
+                        postDataLength += (currentByte << 8);
+                        gotPostDataLength = 1;
+                    } else {
+                        receivedPostData[incomingPostByteCount-2] = currentByte;
+                    }
+                    incomingPostByteCount++;
+                }
+                if (currentByte == 0 && incomingByteCount > 1 && !finishedReceivingData) { // TODO: Do length-based transfer, instead of null-terminated strings. Imagine binary data for payload.
                     finishedReceivingData = true;
                     b = micros();
+                }
+                if (gotPostDataLength && incomingPostByteCount-2 == postDataLength && !finishedReceivingPostData) {
+                    finishedReceivingPostData = true;
+
                 }
                 currentByte = 0;
                 
@@ -257,7 +295,6 @@ void LatchNES() {
             currentBit = 0;
             lastLoadBearingLatch = micros();
         }
-
     } else if (hasFormattedData) { 
         readyToSendBytes = true;
         if (byteCount == response.body.length() + 11) {

@@ -30,12 +30,15 @@ Right now the feature list is pretty short. I intend to keep building this up ov
 
 #### Current Features: 
 - http get requests
+- http post requests
+- http put requests
+- http delete requests
+
 
 #### Desired/Upcoming Features: 
-- http post
-- http put
-- http delete 
 - https
+- Better stability
+- More efficient use of rom space & memory.
 
 ## What does using the library look like?
 
@@ -121,6 +124,35 @@ After that, use it as you'd use any other library.
 - **Returns**: Integer representing http response code. (200 OK, 404 Not found, etc)
 - **Description**: Does an http get request, and puts the response into a character array.
 
+#### int http_delete(unsigned char* url, unsigned char* buffer, int maxLength)
+- **Inputs**:
+  - url: The URL to send the delete request to. Must be http (https/other protocols not supported)
+  - buffer: Pointer to a char array in which to store data from the request.
+  - maxLength: Maximum number of chars to return. Generally this is the length of your char array.
+- **Returns**: Integer representing http response code. (200 OK, 404 Not found, etc)
+- **Description**: Does an http delete request, and puts the response into a character array.
+
+#### int http_post(unsigned char *url, unsigned char *data, int data_length, unsigned char *buffer, int max_length)
+- **Inputs**:
+  - url: The URL to send the post request to. Must be http (https/other protocols not supported)
+  - data: Data to include with the post request.
+  - data_length: How many bytes to copy from `data`. Should include the null terminator for strings.
+  - buffer: Pointer to a char array in which to store data from the request.
+  - maxLength: Maximum number of chars to return. Generally this is the length of your char array.
+- **Returns**: Integer representing http response code. (200 OK, 404 Not found, etc)
+- **Description**: Does an http post request, and puts the response into a character array.
+
+#### int http_put(unsigned char *url, unsigned char *data, int data_length, unsigned char *buffer, int max_length)
+- **Inputs**:
+  - url: The URL to send the put request to. Must be http (https/other protocols not supported)
+  - data: Data to include with the post request.
+  - data_length: How many bytes to copy from `data`. Should include the null terminator for strings.
+  - buffer: Pointer to a char array in which to store data from the request.
+  - maxLength: Maximum number of chars to return. Generally this is the length of your char array.
+- **Returns**: Integer representing http response code. (200 OK, 404 Not found, etc)
+- **Description**: Does an http put request, and puts the response into a character array.
+
+
 ## How can I build the photon firmware?
 
 Note that you don't have to do this. You can download the latest artifact from CI (link at top of readme) and flash
@@ -165,7 +197,7 @@ be built in the base folder.
 - If a response is too long, the NES library will cut it off, and if another request is made before the photon firmware finishes
   sending the message, that will corrupt the next request.
 - Request URLs get corrupted on occasion. This happens more often when music/sound effects are playing.
-- The NES Powerpak seems to stop accepting controller input after 5-10 seconds if the photon is connected with the photon 
+- The NES Powerpak seems to stop accepting controller input after 5-10 seconds if the photon is connected with the nesnet 
   firmware on it. Either start your game fast, or plug in the photon after choosing a game.
 - Flashing the Photon firmware causes the NES to reset, or sometimes end up in an undefined state.
 - If the request from the library to the photon takes too long, the library will respond with a 599 error. (Unique to NESNet)
@@ -203,7 +235,7 @@ the delay is bearable. (Especially on an older console like the NES. We expect i
 
 # How is this different from ConnectedNES?
 
-Well, for one it's a lot less pretty. Seriously, I have no balloons or anything in my demo!
+Well, for one it's a lot less pretty. Seriously, I have no balloons or anything in my demos!
 
 Also, ConnectedNES is very purpose-built. The photon software is built to receive events from a node client running on
 a server - specifically tailored to your NES. The NES actually receives push events through the controller port whenever
@@ -213,8 +245,7 @@ This project has no special server software required. It can do regular http req
 internet. The photon software has an http client, and the NES controller port is used to interface with that. It is 
 also a library; meant to enable other internet-enabled projects. 
 
-You could use NESNet to build a Twitter client with some effort. (With some library improvements, you could even tweet
-from it!)
+You could use NESNet to build a Twitter client with some effort. You could potentially even send tweets from it!
 
 
 # How can I contribute?
@@ -231,4 +262,4 @@ Just send a PR! There aren't any hard-and-fast rules right now. I'm sure we can 
 
 [After The Rain](http://shiru.untergrund.net/music.shtml) by [Shiru](http://shiru.untergrund.net/) for browser music.
 
-If I'm missed anyone/anything, let me know! It's not intentional, I promise.
+If I'm missing anyone/anything, let me know! It's not intentional, I promise.

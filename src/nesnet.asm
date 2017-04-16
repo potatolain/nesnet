@@ -15,9 +15,9 @@
 .define NESNET_RESPONSE_WAIT_TIME 75 ; How long do we wait for a response from the controller before giving up?
 
 .define HTTP_GET 		'G'
-.define HTTP_PUT 		'U'
-.define HTTP_POST		'P'
-.define HTTP_DELETE		'D'
+.define HTTP_PUT 		'E'
+.define HTTP_POST		'A'
+.define HTTP_DELETE		'C'
 
 
 ; Note: Since ca65 is kind of a pain, all exports are at the bottom. 
@@ -57,7 +57,150 @@
 	sta $4016
 .endmacro
 
-.scope HttpLib ; Use a separate scope to encapsulate some variables we use.
+.macro http_get_style_request METHOD
+	sta MAX_LENGTH
+	stx MAX_LENGTH+1
+
+	jsr popax
+	sta RESPONSE
+	stx RESPONSE+1
+
+	jsr popax
+	clc
+	adc #7 ; Add 7 to skip http://, since http is the only supported protocol for now.
+	sta URL
+	txa
+	adc #0
+	sta URL+1
+
+	jsr do_handshake
+
+	jsr NESNET_WAIT_NMI
+
+	lda #METHOD
+	jsr send_byte_to_nes
+
+	; Okay, time to send some data over.
+	ldy #0
+	@string_loop:
+		lda (URL), y
+		cmp #0
+		beq @break_loop
+
+		jsr send_byte_to_nes
+		iny
+		tya
+		and #%00001111
+		cmp #0
+		bne @skip_waiting
+			jsr NESNET_WAIT_NMI
+		@skip_waiting:
+		cpy #254
+		bne @string_loop ; TODO: Allow for more than 255 chars. Also include nmi wait logic when this happens.
+	@break_loop:
+
+	; Finally, send a 0 byte
+	lda #0
+	jsr send_byte_to_nes
+
+	jsr NESNET_WAIT_NMI
+
+	jsr get_nes_response
+	
+	rts
+
+.endmacro
+
+.macro http_post_style_request METHOD
+	sta MAX_LENGTH
+	stx MAX_LENGTH+1
+
+	jsr popax
+	sta RESPONSE
+	stx RESPONSE+1
+
+	jsr popax
+	sta HTTP_DATA_LENGTH
+	stx HTTP_DATA_LENGTH+1
+
+	jsr popax
+	sta HTTP_DATA
+	stx HTTP_DATA+1
+
+	jsr popax
+	clc
+	adc #7 ; Add 7 to skip http://, since http is the only supported protocol for now.
+	sta URL
+	txa
+	adc #0
+	sta URL+1
+
+	jsr do_handshake
+	
+	jsr NESNET_WAIT_NMI
+
+	lda #METHOD
+	jsr send_byte_to_nes
+
+	; Okay, time to send some data over.
+	ldy #0
+	@string_loop:
+		lda (URL), y
+		cmp #0
+		beq @break_loop
+
+		jsr send_byte_to_nes
+		iny
+		tya
+		and #%00001111
+		cmp #0
+		bne @skip_waiting
+			jsr NESNET_WAIT_NMI
+		@skip_waiting:
+		cpy #254
+		bne @string_loop ; TODO: Allow for more than 255 chars. Also include nmi wait logic when this happens.
+	@break_loop:
+
+	; Finally, send a 0 byte
+	lda #0
+	jsr send_byte_to_nes
+
+	jsr NESNET_WAIT_NMI
+	
+	; Okay... next, we need to tell it about some of our data
+	lda HTTP_DATA_LENGTH
+	jsr send_byte_to_nes
+	lda HTTP_DATA_LENGTH+1
+	jsr send_byte_to_nes
+	; Here we go!
+	ldy #0
+	@data_loop:
+		lda (HTTP_DATA), y
+		jsr send_byte_to_nes
+
+		iny
+		cpy #0
+		bne @no_loopy
+			inc HTTP_DATA+1
+		@no_loopy:
+		dec HTTP_DATA_LENGTH
+		lda HTTP_DATA_LENGTH
+		cmp #255
+		bne @not_dec
+			dec HTTP_DATA_LENGTH+1
+			lda HTTP_DATA_LENGTH+1
+			cmp #255
+			beq @after_data
+		@not_dec:
+		jmp @data_loop
+	@after_data:
+
+	jsr get_nes_response
+	
+	rts
+.endmacro
+
+.scope HttpLib ; Use a separate scope to encapsulate some labels/etc we use.
 
 	byte_to_bit_lookup: 
 		.byte %00000001
@@ -73,94 +216,55 @@
 		.asciiz "http:///test"
 
 	get: 
-	
-		sta MAX_LENGTH
-		stx MAX_LENGTH+1
+		http_get_style_request HTTP_GET
 
-		jsr popax
-		sta RESPONSE
-		stx RESPONSE+1
+	delete:
+		http_get_style_request HTTP_DELETE
 
-		jsr popax
-		clc
-		adc #7 ; Add 7 to skip http://, since http is the only supported protocol for now.
-		sta URL
-		txa
-		adc #0
-		sta URL+1
+	post: 
+		http_post_style_request HTTP_POST
 
-		jsr do_handshake
+	put:
+		http_post_style_request HTTP_PUT	
 
-		jsr NESNET_WAIT_NMI
 
-		lda #HTTP_GET
-		jsr send_byte_to_nes
 
-		; Okay, time to send some data over.
-		ldy #0
-		@string_loop:
-			lda (URL), y
-			cmp #0
-			beq @break_loop
+	test_connection:
+		lda #<(test_url)
+		ldx #>(test_url)
+		jsr pushax
+		lda #<(_nesnet_buffer)
+		ldx #>(_nesnet_buffer)
+		jsr pushax
 
-			jsr send_byte_to_nes
-			iny
-			tya
-			and #%00001111
-			cmp #0
-			bne @skip_waiting
-				jsr NESNET_WAIT_NMI
-			@skip_waiting:
-			cpy #254
-			bne @string_loop ; TODO: Allow for more than 255 chars. Also include nmi wait logic when this happens.
-		@break_loop:
+		; Desired length is length of buffer... 4 whole bytes.
+		lda #4
+		ldx #0
 
-		; Finally, send a 0 byte
-		lda #0
-		jsr send_byte_to_nes
-
-		jsr NESNET_WAIT_NMI
-
-		jsr get_nes_response
+		jsr get
 		
-		rts
+		lda _nesnet_buffer
+		cmp #'T'
+		bne @bad_end
+		lda _nesnet_buffer+1
+		cmp #'E'
+		bne @bad_end
+		lda _nesnet_buffer+2
+		cmp #'S'
+		bne @bad_end
+		lda _nesnet_buffer+3
+		cmp #'T'
+		bne @bad_end
+		@happy_end: 
+			lda #1
+			ldx #0
+			rts
+		@bad_end:
+			lda #0
+			ldx #0
+			rts
 
-test_connection:
-	lda #<(test_url)
-	ldx #>(test_url)
-	jsr pushax
-	lda #<(_nesnet_buffer)
-	ldx #>(_nesnet_buffer)
-	jsr pushax
-
-	; Desired length is length of buffer... 4 whole bytes.
-	lda #4
-	ldx #0
-
-	jsr get
-	
-	lda _nesnet_buffer
-	cmp #'T'
-	bne @bad_end
-	lda _nesnet_buffer+1
-	cmp #'E'
-	bne @bad_end
-	lda _nesnet_buffer+2
-	cmp #'S'
-	bne @bad_end
-	lda _nesnet_buffer+3
-	cmp #'T'
-	bne @bad_end
-	@happy_end: 
-		lda #1
-		ldx #0
-		rts
-	@bad_end:
-		lda #0
-		ldx #0
-		rts
-
-send_byte_to_nes: 
+	send_byte_to_nes: 
 			sta _nesnet_buffer+19
 			ldx #0
 			@byte_loop: ; TODO: loop this 3 times, like we do in the other direction?
@@ -198,7 +302,7 @@ send_byte_to_nes:
 			rts
 
 
-get_nes_response:
+	get_nes_response:
 		ldx #0
 		ldy #0
 		@loop_zero:
@@ -291,7 +395,7 @@ get_nes_response:
 		; Put response code into return value.
 		lda URL
 		ldx URL+1
-	rts
+		rts
 	; Part of the above method... if all goes wrong, tell us.
 	@get_complete_failure:
 		lda #0
@@ -423,4 +527,7 @@ get_pad_values_no_retry:
 
 
 .export _http_get = HttpLib::get
+.export _http_post = HttpLib::post
+.export _http_put = HttpLib::put
+.export _http_delete = HttpLib::delete
 .export _nesnet_check_connected = HttpLib::test_connection
