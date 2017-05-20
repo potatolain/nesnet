@@ -1,5 +1,13 @@
 # NESNET [![CircleCI](https://circleci.com/gh/cppchriscpp/nesnet.svg?style=svg)](https://circleci.com/gh/cppchriscpp/nesnet)
 
+# BREAK NOTE
+
+This branch has semi-tested code for a newer asynchronous version of the library. The documentation has not yet been updated, and
+not all request types are implemented. The connection test may/may not work. (But after 3-4 requests it should start working on its
+own most times)
+
+I'm still doing some crazy cleanup/refactor/etc work on this. Stay tuned.
+
 Ever want to make an internet-enabled NES game? Now you can! All it takes is a little C knowledge and some time.
 
 **Important**: This project is very much a work in progress. While this will work for basic cases, it's not what
@@ -246,7 +254,6 @@ internet. The photon software has an http client, and the NES controller port is
 also a library; meant to enable other internet-enabled projects. 
 
 You could use NESNet to build a Twitter client with some effort. You could potentially even send tweets from it!
-
 
 # How can I contribute?
 

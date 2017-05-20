@@ -11,7 +11,7 @@ unsigned char nesnet_buffer[20];
  * buffer: The character array to populate with data
  * max_length: How many bytes to capture at maximum. This should be equal to the size of your buffer char array.
 */
-int __fastcall__ http_get(unsigned char* url, unsigned char *buffer, int max_length);
+void __fastcall__ http_get(unsigned char* url, unsigned char *buffer, int max_length);
 
 /**
  * Make an HTTP delete request
@@ -19,7 +19,7 @@ int __fastcall__ http_get(unsigned char* url, unsigned char *buffer, int max_len
  * buffer: The character array to populate with response data.
  * max_length: How many bytes to capture at maximum. This should be equal to the size of your buffer char array.
 */
-int __fastcall__ http_delete(unsigned char* url, unsigned char *buffer, int max_length);
+void __fastcall__ http_delete(unsigned char* url, unsigned char *buffer, int max_length);
 
 /**
  * Make an HTTP POST request.
@@ -29,7 +29,7 @@ int __fastcall__ http_delete(unsigned char* url, unsigned char *buffer, int max_
  * buffer: The character array to populate with data.
  * max_length: How many bytes of the response to capture at maximum. This should be the size of your char array.
 */
-int __fastcall__ http_post(unsigned char *url, unsigned char *data, int data_length, unsigned char *buffer, int max_length);
+void __fastcall__ http_post(unsigned char *url, unsigned char *data, int data_length, unsigned char *buffer, int max_length);
 
 /**
  * Make an HTTP PUT request.
@@ -39,12 +39,36 @@ int __fastcall__ http_post(unsigned char *url, unsigned char *data, int data_len
  * buffer: The character array to populate with data.
  * max_length: How many bytes of the response to capture at maximum. This should be the size of your char array.
 */
-int __fastcall__ http_put(unsigned char *url, unsigned char *data, int data_length, unsigned char *buffer, int max_length);
+void __fastcall__ http_put(unsigned char *url, unsigned char *data, int data_length, unsigned char *buffer, int max_length);
 
 
 /**
  * Test to make sure a NESNet adapter is connected and responding correctly.
  * Generally it's a good idea to run this at least once during startup (after some input, like hitting start) to make sure it's there.
+ * 0 = not connected, 1 = connected.
  */
 unsigned char __fastcall__ nesnet_check_connected(void);
+
+/**
+ * Test to see if the current request is completed. Returns 1 if complete, 0 if not.
+ */
+unsigned char __fastcall__ http_request_complete(void);
+
+/**
+ * Run this repeatedly to send/fetch bytes to the NES while you're doing other work. 
+ * Intended use is to call 1x per frame while doing other work. May or may not work if called more than 1x/frame.
+ */
+void __fastcall__ nesnet_do_cycle(void);
+
+/**
+ * Return the http response code for the last completed http request. 
+ * Behavior is undefined if a request is in progress.
+ */
+int __fastcall__ http_response_code(void);
+
+/**
+ * Special wrapper for polling the NES control pad that won't trigger extra latches, which would confuse
+ * the nesnet hardware. Only triggers a latch when needed. Use in place of neslib input routines. (Or else!)
+ */
+unsigned char __fastcall__ nesnet_pad_poll(void);
 #endif

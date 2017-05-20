@@ -3,14 +3,20 @@
 #include "hello.h"
 #include "../../src/nesnet.h"
 
+#define REQUEST_TYPE_NONE 0
+#define REQUEST_TYPE_WORD 1
+#define REQUEST_TYPE_IP 2
+
 static unsigned char currentPadState, nesnetConnected, nesnetConnectionAttempts;
 static int resCode;
 static unsigned char theMessage[64];
+static unsigned char requestType;
 
 // Main entry point for the application.
 void main(void) {
 	nesnetConnected = 0; 
 	nesnetConnectionAttempts = 0;
+	requestType = REQUEST_TYPE_NONE;
 
 	show_boilerplate();
 	put_str(NTADR_A(2,18), "Waiting for NESNet...");
@@ -46,15 +52,29 @@ void main(void) {
 
 	// Now we wait for input from the user, and do internet-y things!
 	while(1) {
-		currentPadState = pad_trigger(0);
-		if (currentPadState & PAD_A) {
-			resCode = http_get("http://ipinfo.io/ip", theMessage, 64);
-			show_the_message("Your IP:");
+		currentPadState = nesnet_pad_poll();
+		if (http_request_complete() && currentPadState & PAD_A) {
+			requestType = REQUEST_TYPE_IP;
+			http_get("http://ipinfo.io/ip", theMessage, 64);
 
-		} else if (currentPadState & PAD_B) {
-			resCode = http_get("http://www.setgetgo.com/randomword/get.php", theMessage, 64);
-			show_the_message("Random Word:");
+		} else if (http_request_complete() && currentPadState & PAD_B) {
+			requestType = REQUEST_TYPE_WORD;
+			http_get("http://www.setgetgo.com/randomword/get.php", theMessage, 64);
+		} else if (http_request_complete() && requestType != REQUEST_TYPE_NONE) {
+			resCode = http_response_code();
+			if (resCode == 200) {
+				if (requestType == REQUEST_TYPE_WORD) {
+					show_the_message("Random Word:");
+				} else {
+					show_the_message("Your IP:");
+				}
+			} else {
+				show_the_message("It went wrong: ");
+			}
+			// Set request type to none so we can trigger a new request.
+			requestType = REQUEST_TYPE_NONE;
 		}
+		nesnet_do_cycle();
 		ppu_wait_nmi();
 	}
 }
@@ -110,5 +130,6 @@ void show_the_message(char* whatIsThis) {
 		put_str(NTADR_A(2, 18), "Encountered error getting response:");
 	}
 	put_str(NTADR_A(2, 20), theMessage);
+
 	ppu_on_all();
 }

@@ -101,8 +101,7 @@ void show_connection_failure() {
 	ppu_off();
 	put_str(NTADR_A(2,18), "NESNet device not detected.");
 	put_str(NTADR_A(2,20), "Connect it to the 2nd");
-	put_str(NTADR_A(2,21), "controller port, then reset");
-	put_str(NTADR_A(2,22), "the console.");
+	put_str(NTADR_A(2,21), "controller port.");
 	put_str(NTADR_A(2,24), "Press A to try again.");
 	ppu_on_all();
 }
@@ -196,7 +195,7 @@ void do_init() {
 		// Poll for the device until we see it connected.
 		if (!nesnetConnected && nesnetConnectionAttempts < 5) {
 			nesnetConnected = nesnet_check_connected();
-			nesnetConnectionAttempts++;
+			++nesnetConnectionAttempts;
 			if (nesnetConnected) {
 				// If the device is connected, remove connecting message.
 				ppu_off();
@@ -206,7 +205,7 @@ void do_init() {
 		} else if (nesnetConnectionAttempts == 5) {
 			show_connection_failure();
 			// Increment one more time so we only see this message show up once.
-			nesnetConnectionAttempts++;
+			++nesnetConnectionAttempts;
 		}
 	}
 
@@ -267,7 +266,7 @@ void show_home() {
 		if (*currentChar == '|') {
 			offset += 0x20;
 			vram_adr(offset);
-			currentChar++;
+			++currentChar;
 			forumIdA = forumIdB = 0;
 		}
 	}
@@ -348,7 +347,7 @@ void show_forum() {
 		// For now, just skip the id. We'll get there.
 		if (!hasHitColon && *currentChar == ':') {
 			topicIds[j] = 0;
-			for (i = 0; jj + i < ii; i++) {
+			for (i = 0; jj + i < ii; ++i) {
 				if (theMessage[jj+i] >= '0' && theMessage[jj+i] <= '9') {
 					topicIds[j] = (topicIds[j]*10) + (theMessage[jj+i] - '0');
 				}
@@ -365,11 +364,11 @@ void show_forum() {
 			offset += 0x20;
 			vram_adr(offset);
 			currentChar++;
-			ii++;
+			++ii;
 			totalTopicCount++;
 		}
 
-		ii++;
+		++ii;
 	}
 	draw_debug_info();
 
@@ -391,7 +390,7 @@ void do_forum() {
 	if (currentPadState & PAD_UP && currentTopicPosition > 0) {
 		currentTopicPosition--;
 	} else if (currentPadState & PAD_DOWN && currentTopicPosition < totalTopicCount-1) {
-		currentTopicPosition++;
+		++currentTopicPosition;
 	}
 
 	if (currentPadState & PAD_A) {
