@@ -4,3 +4,4 @@ all:
 	cd photon-firmware && make
 	cd demos/forum-browser && make
 	cd demos/hello-world && make
+	cd demos/character-movement && make
