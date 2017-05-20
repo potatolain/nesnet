@@ -210,7 +210,7 @@ void GetNetResponse() {
     // What kind of request do we wanna make today? Or... do we need to get more from the NES?
     if (receivedBytes[0] == HTTP_GET) {
         // Get request
-        request.body = NULL;
+        request.body = "\0";
         http.get(request, response, headers);
         // TODO: Implement PUT/POST... Thinking wait for /0 for the main string, then 1 (or 2?) byte length, then data.
     } else if (receivedBytes[0] == HTTP_POST) {
@@ -220,7 +220,7 @@ void GetNetResponse() {
         request.body = String(receivedPostData);
         http.put(request, response, headers);
     } else if (receivedBytes[0] == HTTP_DELETE) { 
-        request.body = NULL;
+        request.body = "\0";
         http.del(request, response, headers);
     } else {
         Particle.publish("unkEvtType", receivedBytes);
