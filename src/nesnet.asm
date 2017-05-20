@@ -338,7 +338,7 @@
 			rts
 
 ; FIXME: Baleeted
-	get_nes_response:
+/*	get_nes_response:
 		ldx #0
 		ldy #0
 		@loop_zero:
@@ -440,7 +440,7 @@
 		sta NET_RESPONSE_CODE
 		lda #>(599)
 		sta NET_RESPONSE_CODE+1
-		rts
+		rts*/
 
 	do_handshake:
 		inc NET_RESPONSE_CODE

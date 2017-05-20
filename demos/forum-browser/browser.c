@@ -20,7 +20,7 @@ static unsigned int topicIds[20]; // Support up to 20 topics with int ids.
 #pragma bssseg (push,"ZEROPAGE")
 #pragma dataseg(push,"ZEROPAGE")
 
-static unsigned char currentPadState;
+static unsigned char currentPadState, _currentPadState, lastPadState, tempPadState;
 static unsigned char callCount, i, j;
 static unsigned int ii, jj;
 static unsigned char *currentChar;
@@ -86,6 +86,22 @@ void write_screen_buffer(unsigned char x, unsigned char y, char* data) {
 	set_vram_update(screenBuffer);
 }
 
+unsigned char wrapped_pad_trigger() {
+	lastPadState = _currentPadState;
+	_currentPadState = nesnet_pad_poll();
+	tempPadState = (_currentPadState ^ lastPadState) & _currentPadState;
+	return tempPadState;
+}
+
+int wrapped_http_get(char* url, char* buffer, int length) {
+	http_get(url, buffer, length);
+	while (!http_request_complete()) {
+		nesnet_do_cycle();
+		ppu_wait_frame();
+	}
+	return http_response_code();
+}
+
 void clear_screen() {
 	vram_adr(0x2060);
 	vram_fill(0, 0x03a0);
@@ -100,9 +116,9 @@ void draw_debug_info() {
 void show_connection_failure() {
 	ppu_off();
 	put_str(NTADR_A(2,18), "NESNet device not detected.");
-	put_str(NTADR_A(2,20), "Connect it to the 2nd");
+	put_str(NTADR_A(2,20), "Connect to the 2nd");
 	put_str(NTADR_A(2,21), "controller port.");
-	put_str(NTADR_A(2,24), "Press A to try again.");
+	put_str(NTADR_A(2,24), "Press A to retry.");
 	ppu_on_all();
 }
 
@@ -141,7 +157,7 @@ void main(void) {
 	put_str(NTADR_A(3,27), "Inspired by ConnectedNES");
 	put_str(NTADR_A(2,9),"Press a to browse the");
 	put_str(NTADR_A(2,10),"most recent forum posts.");
-	put_str(NTADR_A(2,12), "Press start to toggle music");
+	put_str(NTADR_A(2,12), "Start to toggle music");
 	put_str(NTADR_A(2,13), "After the Rain by Shiru");
 	put_str(NTADR_A(2,18), "Waiting for NESNet...");
 
@@ -183,7 +199,7 @@ void do_pause() {
 
 void do_init() {
 	ppu_wait_frame();
-	currentPadState = pad_trigger(0);
+	currentPadState = wrapped_pad_trigger();
 	if (currentPadState & PAD_A) {
 		if (nesnet_check_connected()) {
 			show_home();
@@ -228,7 +244,7 @@ void show_home() {
 	ppu_wait_frame(); // Flush output to make sure we see this on screen first.
 	set_vram_update(NULL);
 
-	resCode = http_get("http://cpprograms.net/devnull/nesdev/", theMessage, 500);
+	resCode = wrapped_http_get("http://cpprograms.net/devnull/nesdev/", theMessage, 500);
 
 	if (resCode != 200) {
 		show_error();
@@ -279,7 +295,7 @@ void show_home() {
 
 void do_home() {
 	ppu_wait_nmi();
-	currentPadState = pad_trigger(0);
+	currentPadState = wrapped_pad_trigger();
 	// Undocumented feature - use select to reload.
 	if (currentPadState & PAD_SELECT) {
 		show_home();
@@ -289,9 +305,9 @@ void do_home() {
 	}
 
 	if (currentPadState & PAD_UP && currentForumPosition > 0) {
-		currentForumPosition--;
+		--currentForumPosition;
 	} else if (currentPadState & PAD_DOWN && currentForumPosition < totalForumCount-1) {
-		currentForumPosition++;
+		++currentForumPosition;
 	}
 
 	if (currentPadState & PAD_A) {
@@ -323,7 +339,7 @@ void show_forum() {
 	currentUrl[FIRST_CUSTOM_URL_CHAR+4] = forumIds[(currentForumPosition<<1) + 1];
 	currentUrl[FIRST_CUSTOM_URL_CHAR+5] = '\0';
 
-	resCode = http_get(currentUrl, theMessage, 500);
+	resCode = wrapped_http_get(currentUrl, theMessage, 500);
 
 	if (resCode != 200) {
 		show_error();
@@ -379,7 +395,7 @@ void show_forum() {
 
 void do_forum() {
 	ppu_wait_frame();
-	currentPadState = pad_trigger(0);
+	currentPadState = wrapped_pad_trigger();
 	// Undocumented feature - use select to restart.
 	if (currentPadState & PAD_SELECT) {
 		show_forum();
@@ -435,7 +451,7 @@ void show_topic() {
 	currentUrl[FIRST_CUSTOM_URL_CHAR+7] = '=';
 	itoa(topicIds[currentTopicPosition], &currentUrl[FIRST_CUSTOM_URL_CHAR+8]);
 
-	resCode = http_get(currentUrl, theMessage, 500);
+	resCode = wrapped_http_get(currentUrl, theMessage, 500);
 
 	if (resCode != 200) {
 		show_error();
@@ -513,7 +529,7 @@ void show_topic() {
 
 void do_topic() {
 	ppu_wait_frame();
-	currentPadState = pad_trigger(0);
+	currentPadState = wrapped_pad_trigger();
 
 	if (currentPadState & PAD_B) {
 		show_forum();
@@ -538,8 +554,8 @@ void show_error() {
 	clear_screen();
 	hide_pointer();
 
-	put_str(NTADR_A(2,3), "An error occurred");
-	put_str(NTADR_A(2,5), "Unable to load content from web.");
+	put_str(NTADR_A(2,3), "ERROR");
+	put_str(NTADR_A(2,5), "Failed to load content.");
 	put_str(NTADR_A(2,6), "Press A to retry.");
 	screenBuffer[0] = 'C';
 	screenBuffer[1] = 'O';
@@ -554,7 +570,6 @@ void show_error() {
 
 	put_str(NTADR_A(2,9), "Content:");
 	put_str(NTADR_A(2,10), theMessage);
-	put_str(NTADR_A(1, 27), currentUrl);
 	ppu_on_all();
 	// Deal with a second error coming from our original error state. :(
 	if (gameState != GAME_STATE_ERROR) {
@@ -565,7 +580,7 @@ void show_error() {
 
 void do_error() {
 	ppu_wait_frame();
-	currentPadState = pad_trigger(0);
+	currentPadState = wrapped_pad_trigger();
 
 	if (currentPadState & PAD_A) {
 		switch (lastGameState) {
