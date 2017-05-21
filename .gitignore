@@ -10,6 +10,8 @@ demos/*/tools/cc65/*
 !demos/*/tools/cc65/README.md
 demos/*/hello.s
 demos/*/browser.s
+demos/*/echo.s
+demos/*/world.s
 demos/*/graphics/processed/*
 !demos/*/graphics/processed/empty
 
