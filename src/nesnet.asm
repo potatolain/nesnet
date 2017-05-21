@@ -52,16 +52,16 @@
 .define NET_STATE_POST_RECEIVING_BYTES		109
 .define NET_STATE_POST_DONE					110
 
-.define NET_STATE_PUT_INIT 					101
-.define NET_STATE_PUT_HANDSHAKE 			102
-.define NET_STATE_PUT_SENDING_METHOD		103
-.define NET_STATE_PUT_SENDING_URL	 		104
-.define NET_STATE_PUT_SENDING_DATA			105
-.define NET_STATE_PUT_WAITING				106
-.define NET_STATE_PUT_RES_CODE				107
-.define NET_STATE_PUT_RES_LENGTH			108
-.define NET_STATE_PUT_RECEIVING_BYTES		109
-.define NET_STATE_PUT_DONE					110
+.define NET_STATE_PUT_INIT 					151
+.define NET_STATE_PUT_HANDSHAKE 			152
+.define NET_STATE_PUT_SENDING_METHOD		153
+.define NET_STATE_PUT_SENDING_URL	 		154
+.define NET_STATE_PUT_SENDING_DATA			155
+.define NET_STATE_PUT_WAITING				156
+.define NET_STATE_PUT_RES_CODE				157
+.define NET_STATE_PUT_RES_LENGTH			158
+.define NET_STATE_PUT_RECEIVING_BYTES		159
+.define NET_STATE_PUT_DONE					160
 
 
 ; Note: Since ca65 is kind of a pain, all exports are at the bottom. 
@@ -796,6 +796,9 @@
 		cmp #NET_STATE_POST_RECEIVING_BYTES
 		beq @receive
 
+		; If you didn't hit anything, assume the request must be complete.
+		lda #0
+		sta NET_REQUEST_IN_PROGRESS
 
 		rts
 
