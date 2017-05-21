@@ -1,7 +1,5 @@
 ; Startup code for cc65 and Shiru's NES library
 ; based on code by Groepaz/Hitmen <groepaz@gmx.net>, Ullrich von Bassewitz <uz@cc65.org>
-.include "../../src/nesnet_config.asm"
-
 
 FT_DPCM_OFF				= $c000		;$c000..$ffc0, 64-byte steps
 FT_SFX_STREAMS			= 4			;number of sound effects played at once, 1..4

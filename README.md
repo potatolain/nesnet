@@ -1,18 +1,11 @@
 # NESNET [![CircleCI](https://circleci.com/gh/cppchriscpp/nesnet.svg?style=svg)](https://circleci.com/gh/cppchriscpp/nesnet)
 
-# BREAK NOTE
+Ever want to make your NES go online? Now you can! All it takes is a little C knowledge and some time.
 
-This branch has semi-tested code for a newer asynchronous version of the library. The documentation has not yet been updated, and
-not all request types are implemented. The connection test may/may not work. (But after 3-4 requests it should start working on its
-own most times)
-
-I'm still doing some crazy cleanup/refactor/etc work on this. Stay tuned.
-
-Ever want to make an internet-enabled NES game? Now you can! All it takes is a little C knowledge and some time.
-
-**Important**: This project is very much a work in progress. While this will work for basic cases, it's not what
+**Important**: This project is very much a work in progress. While this should work for basic cases, it's not what
 I'd call production-ready code. Requests will sometimes fail, data may be wrong, etc. This is a hobbyist's toy, 
-so please treat it that way.
+so please treat it that way. (Note: Don't let this dissuade you from filing bugs, though! I just may not get to them
+very quickly.)
 
 ### Latest CI Artifacts (master branch)
 -  [Photon Firmware](https://circleci-tkn.rhcloud.com/api/v1/project/cppchriscpp/nesnet/tree/master/latest/artifacts/photon_firmware.bin)
@@ -41,22 +34,32 @@ Right now the feature list is pretty short. I intend to keep building this up ov
 - http post requests
 - http put requests
 - http delete requests
+- Asynchronous requests alongside game logic. No need to stop the action to send a request!
 
 
 #### Desired/Upcoming Features: 
 - https
 - Better stability
-- More efficient use of rom space & memory.
+- More efficient use of rom space, zeropage and system memory.
+- Better demos
 
 ## What does using the library look like?
 
-Here's a quick code example: 
+Here's a quick, simple code example: 
 
 ```C
 int resCode;
 char[16] theMessage;
-resCode = http_get("http://yoursite.com/time.php", theMessage, 16);
-// theMessage will now contain the first 16 chars of output from time.php on yoursite.com.
+// This triggers the get request, which will run in the background
+http_get("http://yoursite.com/time.php", theMessage, 16);
+// Now, we have to wait a while. You could do all of this in your game's logic loop instead.
+while (!http_request_complete()) {
+  // This method should be run once per frame. It does all of the web request stuff in the background.
+  nesnet_do_cycle();
+  ppu_wait_nmi();
+}
+if (http_response_code() == 200)
+  // theMessage will now contain the first 16 chars of output from time.php on yoursite.com.
 ```
 
 For more thorough examples, check out the demos/ folder.
@@ -66,7 +69,7 @@ For more thorough examples, check out the demos/ folder.
 ## What hardware do I need?
 
 First off, you need an original NES console. I can't verify that this will work with anything aside from original hardware.
-This library is extremely time sensitive in nature, so a clone console risks changing that, which would be catastrophic.
+This library is extremely time sensitive in nature, so anything else might risk changing timings and breaking things.
 Don't worry, you won't be making any changes to the NES hardware! 
 
 Next, you need some way to run custom roms on the NES hardware. Something such as the 
@@ -97,16 +100,15 @@ NES controller, connect the NES wires to the photon as follows:
 Using the library is pretty simple. If you're doing it from a C project, you'll need to make 3 main changes to set
 it up.
 
-1. In your bootstrap (crt0.asm) file, include src/nesnet_zp in the zeropage section. It will use about 12 bytes.
-2. In the same file, include src/nesnet_config.asm. If you are not using neslib, you will have to update this file.
-3. Include nesnet.h in the .c file you want to make web requests in. If you copy the code, be sure to
-   put nesnet.asm into the same folder.
+1. In your bootstrap (crt0.asm) file, include src/nesnet_zp.asm in the zeropage section.
+2. In the same file, include src/nesnet.asm. This is the logic behind the header file below uses.
+3. Include nesnet.h in the .c file you want to make web requests in. 
 
 You will also need to set up the particle photon, and flash it with the custom nesnet firmware. Find it on the
 releases page. You can flash using `particle-cli`. Use the following steps:
 ```sh
 # Only have to do this the first time you set up. You can run the last command again to update to a newer 
-# downloaded firmware.
+# downloaded firmware. (Also, you can just run `make flash`)
 npm install -g particle-cli 
 particle login
 particle flash your_device_name_here ./photon_firmware.bin
@@ -120,45 +122,56 @@ After that, use it as you'd use any other library.
 - **Inputs**: 
   - *N/A*
 - **Returns**: 1 if nesnet device is connected and working, 0 otherwise.
-- **Description**: Tests the connection to the nesnet device. You should generally run this at least once when the
+- **Description**: Tests the connection to the nesnet device. You should generally run this when the
                console starts up, and wait until you get a good response. This avoids issues with the photon 
                startup causing bogus results.
 
-#### int http_get(unsigned char* url, unsigned char* buffer, int maxLength)
+#### void http_get(unsigned char* url, unsigned char* buffer, int maxLength)
 - **Inputs**: 
   - url: The URL to fetch a request from. Must be http (https/other protocols not supported)
   - buffer: Pointer to a char array in which to store data from the request.
   - maxLength: Maximum number of chars to return. Generally this is the length of your char array.
-- **Returns**: Integer representing http response code. (200 OK, 404 Not found, etc)
-- **Description**: Does an http get request, and puts the response into a character array.
+- **Description**: Triggers an http get request, that will put the response into a character array.
 
-#### int http_delete(unsigned char* url, unsigned char* buffer, int maxLength)
+#### void http_delete(unsigned char* url, unsigned char* buffer, int maxLength)
 - **Inputs**:
   - url: The URL to send the delete request to. Must be http (https/other protocols not supported)
   - buffer: Pointer to a char array in which to store data from the request.
   - maxLength: Maximum number of chars to return. Generally this is the length of your char array.
-- **Returns**: Integer representing http response code. (200 OK, 404 Not found, etc)
-- **Description**: Does an http delete request, and puts the response into a character array.
+- **Description**: Triggers an http delete request, that will put the response into a character array.
 
-#### int http_post(unsigned char *url, unsigned char *data, int data_length, unsigned char *buffer, int max_length)
+#### void http_post(unsigned char *url, unsigned char *data, int data_length, unsigned char *buffer, int max_length)
 - **Inputs**:
   - url: The URL to send the post request to. Must be http (https/other protocols not supported)
   - data: Data to include with the post request.
   - data_length: How many bytes to copy from `data`. Should include the null terminator for strings.
   - buffer: Pointer to a char array in which to store data from the request.
   - maxLength: Maximum number of chars to return. Generally this is the length of your char array.
-- **Returns**: Integer representing http response code. (200 OK, 404 Not found, etc)
-- **Description**: Does an http post request, and puts the response into a character array.
+- **Description**: Triggers an http post request, that will put the response into a character array.
 
-#### int http_put(unsigned char *url, unsigned char *data, int data_length, unsigned char *buffer, int max_length)
+#### void http_put(unsigned char *url, unsigned char *data, int data_length, unsigned char *buffer, int max_length)
 - **Inputs**:
   - url: The URL to send the put request to. Must be http (https/other protocols not supported)
   - data: Data to include with the post request.
   - data_length: How many bytes to copy from `data`. Should include the null terminator for strings.
   - buffer: Pointer to a char array in which to store data from the request.
   - maxLength: Maximum number of chars to return. Generally this is the length of your char array.
-- **Returns**: Integer representing http response code. (200 OK, 404 Not found, etc)
-- **Description**: Does an http put request, and puts the response into a character array.
+- **Description**: Triggers an http put request, that will put the response into a character array.
+
+#### unsigned char http_request_complete() 
+- **Returns**: 1 If the last request has finished (and thus your buffer is safe to use, and http_response_code will
+               give the correct results.) 0 otherwise.
+- **Description**: Tests to see if the last request made to neslib is complete. Will return 1 if a request is not
+                   in progress. Value is 1 before any requests are made.
+
+#### int http_response_code()
+- **Returns**: The response code from the last http request made.
+- **Description**: Gets the response code from the last http request that nesnet made.
+
+#### unsigned char nesnet_pad_poll()
+- **Returns**: Buttons currently pressed by the user.
+- **Description**: This method *must be used instead of polling the pad directly or using neslib*! This method is
+                   aware of nesnet and avoids corrupting messages to/from the NES.
 
 
 ## How can I build the photon firmware?
@@ -200,6 +213,8 @@ be built in the base folder.
 
 # What known caveats/issues does the system have?
 
+- While a request is in progress, your program *must never read input directly*. The library provides a nesnet_pad_poll method
+  that caches/times pad inputs without corrupting the request/response.
 - Responses will occasionally be off by a few bytes. This generally impacts the status code (200 OK, 404, etc) before anything
   else, so is easy to detect. 
 - If a response is too long, the NES library will cut it off, and if another request is made before the photon firmware finishes

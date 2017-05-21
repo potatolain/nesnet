@@ -510,12 +510,12 @@
 		rts
 
 	do_get_res_len:
+		; TODO: Is this too long for one nmi?
 		jsr get_pad_values
 		sta RESPONSE_LENGTH
 		jsr get_pad_values
 		sta RESPONSE_LENGTH+1
 		dec RESPONSE_LENGTH+1
-		jsr NESNET_WAIT_NMI
 
 		; TODO: Can we do something smart with RESPONSE_LENGTH and MAX_LENGTH to save 2 bytes in zp?
 		lda RESPONSE_LENGTH+1

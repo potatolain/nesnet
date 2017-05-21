@@ -72,7 +72,10 @@ body {
   }
 }
 
-
+.panel.world {
+  width: 480px;
+  margin: auto;
+}
 .panel.world .panel-body {
   width: 480px;
   height: 480px;
