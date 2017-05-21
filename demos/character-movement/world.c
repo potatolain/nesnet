@@ -1,7 +1,7 @@
 #include "lib/neslib.h"
 #include "../../src/nesnet.h"
 
-#define POSITION_URL "http://192.168.1.201:3000/update"
+#define POSITION_URL "http://192.168.1.201:3000/position"
 #define SPRITE_INTERNET 0x20
 #define SPRITE_PLAYER 0x10
 
