@@ -80,7 +80,7 @@ void write_screen_buffer(unsigned char x, unsigned char y, char* data) {
 	screenBuffer[0] = MSB(NTADR_A(x, y)) | NT_UPD_HORZ;
 	screenBuffer[1] = LSB(NTADR_A(x, y));
 	screenBuffer[2] = 16u;
-	for (i = 0; data[i] != '\0'; i++) 
+	for (i = 0; data[i] != '\0'; ++i) 
 		screenBuffer[i+3u] = data[i]-0x20;
 	screenBuffer[19] = NT_UPD_EOF;
 	set_vram_update(screenBuffer);
@@ -105,12 +105,6 @@ int wrapped_http_get(char* url, char* buffer, int length) {
 void clear_screen() {
 	vram_adr(0x2060);
 	vram_fill(0, 0x03a0);
-}
-
-// Dumb helper method to show the URL on-screen to help debug
-// NOTE: Screen must be off.
-void draw_debug_info() {
-	// put_str(NTADR_A(1, 27), currentUrl);
 }
 
 void show_connection_failure() {
@@ -153,12 +147,11 @@ void main(void) {
 
 
 	put_str(NTADR_A(4,2),"NESDev Forum Browser!");
-	put_str(NTADR_A(7,4), "By cppchriscpp");
 	put_str(NTADR_A(3,27), "Inspired by ConnectedNES");
-	put_str(NTADR_A(2,9),"Press a to browse the");
-	put_str(NTADR_A(2,10),"most recent forum posts.");
-	put_str(NTADR_A(2,12), "Start toggles music");
-	put_str(NTADR_A(2,13), "After the Rain by Shiru");
+	put_str(NTADR_A(2,9),"Press a to browse");
+	put_str(NTADR_A(2,10),"recent forum posts.");
+	put_str(NTADR_A(2,14), "Start toggles music");
+	put_str(NTADR_A(2,16), "After the Rain by Shiru");
 	put_str(NTADR_A(2,18), "Waiting for NESNet...");
 
 
@@ -287,8 +280,6 @@ void show_home() {
 		}
 	}
 
-	draw_debug_info();
-
 	ppu_on_all();
 	gameState = GAME_STATE_HOME;
 }
@@ -376,17 +367,16 @@ void show_forum() {
 		if (*currentChar == '|') {
 			hasHitColon = FALSE;
 			jj = ii;
-			j++;
+			++j;
 			offset += 0x20;
 			vram_adr(offset);
-			currentChar++;
+			++currentChar;
 			++ii;
-			totalTopicCount++;
+			++totalTopicCount;
 		}
 
 		++ii;
 	}
-	draw_debug_info();
 
 	ppu_on_all();
 	gameState = GAME_STATE_FORUM;
@@ -404,7 +394,7 @@ void do_forum() {
 	}
 
 	if (currentPadState & PAD_UP && currentTopicPosition > 0) {
-		currentTopicPosition--;
+		--currentTopicPosition;
 	} else if (currentPadState & PAD_DOWN && currentTopicPosition < totalTopicCount-1) {
 		++currentTopicPosition;
 	}
@@ -505,7 +495,7 @@ void show_topic() {
 
 			if (*currentChar == '\n') {
 				vram_adr(offset);
-				currentChar++;
+				++currentChar;
 				continue;
 			}
 		}
@@ -513,7 +503,6 @@ void show_topic() {
 		vram_put(*currentChar-0x20);
 		++currentChar;
 	}
-	draw_debug_info();
 
 	screenBuffer[0] = '0' + ((currentTopicPost+1) / 10);
 	screenBuffer[1] = '0' + (currentTopicPost+1) % 10;
@@ -540,10 +529,10 @@ void do_topic() {
 	}
 
 	if (currentPadState & PAD_UP && currentTopicPost > 0) {
-		currentTopicPost--;
+		--currentTopicPost;
 		show_topic();
 	} else if (currentPadState & PAD_DOWN && currentTopicPost < numberOfPosts-1) {
-		currentTopicPost++;
+		++currentTopicPost;
 		show_topic();
 	}
 	do_pause();

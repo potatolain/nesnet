@@ -45,23 +45,25 @@
 .define NET_STATE_POST_HANDSHAKE 			102
 .define NET_STATE_POST_SENDING_METHOD		103
 .define NET_STATE_POST_SENDING_URL	 		104
-.define NET_STATE_POST_SENDING_DATA			105
-.define NET_STATE_POST_WAITING				106
-.define NET_STATE_POST_RES_CODE				107
-.define NET_STATE_POST_RES_LENGTH			108
-.define NET_STATE_POST_RECEIVING_BYTES		109
-.define NET_STATE_POST_DONE					110
+.define NET_STATE_POST_SENDING_DATA_LEN		105
+.define NET_STATE_POST_SENDING_DATA			106
+.define NET_STATE_POST_WAITING				107
+.define NET_STATE_POST_RES_CODE				108
+.define NET_STATE_POST_RES_LENGTH			109
+.define NET_STATE_POST_RECEIVING_BYTES		110
+.define NET_STATE_POST_DONE					111
 
 .define NET_STATE_PUT_INIT 					151
 .define NET_STATE_PUT_HANDSHAKE 			152
 .define NET_STATE_PUT_SENDING_METHOD		153
 .define NET_STATE_PUT_SENDING_URL	 		154
-.define NET_STATE_PUT_SENDING_DATA			155
-.define NET_STATE_PUT_WAITING				156
-.define NET_STATE_PUT_RES_CODE				157
-.define NET_STATE_PUT_RES_LENGTH			158
-.define NET_STATE_PUT_RECEIVING_BYTES		159
-.define NET_STATE_PUT_DONE					160
+.define NET_STATE_PUT_SENDING_DATA_LEN		155
+.define NET_STATE_PUT_SENDING_DATA			156
+.define NET_STATE_PUT_WAITING				157
+.define NET_STATE_PUT_RES_CODE				158
+.define NET_STATE_PUT_RES_LENGTH			159
+.define NET_STATE_PUT_RECEIVING_BYTES		160
+.define NET_STATE_PUT_DONE					161
 
 
 ; Note: Since ca65 is kind of a pain, all exports are at the bottom. 
@@ -412,9 +414,55 @@
 			inc NET_CURRENT_STATE
 			rts
 
-	do_send_data:
-		; FIXME: Implement me.
+	do_send_data_len:
+		; Okay... next, we need to tell it about some of our data
+		lda HTTP_DATA_LENGTH
+		jsr send_byte_to_nes
+
+		; TODO: Do I mess up game timing at all if I send two bytes at once? I think this is ok?
+		lda HTTP_DATA_LENGTH+1
+		jsr send_byte_to_nes
+		inc NET_CURRENT_STATE
+		ldy #0
+		sty NET_REQUEST_BYTE_NUM
+		sty NET_REQUEST_BYTE_NUM+1
+
 		rts
+	do_send_data:
+		; FIXME: Implement me better-like
+		ldy NET_REQUEST_BYTE_NUM
+
+		lda (HTTP_DATA), y
+		jsr send_byte_to_nes
+
+		iny
+		sty NET_REQUEST_BYTE_NUM
+		cpy #0
+		bne @no_loopy
+			inc HTTP_DATA+1
+			inc NET_REQUEST_BYTE_NUM+1
+		@no_loopy:
+		dec HTTP_DATA_LENGTH
+		lda HTTP_DATA_LENGTH
+		cmp #255
+		bne @not_dec
+			dec HTTP_DATA_LENGTH+1
+			lda HTTP_DATA_LENGTH+1
+			cmp #255
+			beq @everything_sent
+		@not_dec:
+		rts
+		
+		@everything_sent:
+			inc NET_CURRENT_STATE
+			lda #0
+			sta NET_REQUEST_BYTE_NUM
+			sta NET_REQUEST_BYTE_NUM+1 ; This is probably a noop, but it doesn't hurt. Might make for less bugs if we allow longer urls.
+			; Also set response code to 0 to use as a temporary counter for the next step
+			sta NET_RESPONSE_CODE
+			sta NET_RESPONSE_CODE+1
+
+			rts
 
 	do_get_waiting:
 		jsr get_pad_values_no_retry ; Wait until we start seeing real bytes flow in
@@ -609,6 +657,16 @@
 			ldx #HTTP_DELETE
 			jmp @doit
 		@not_delete:
+		cmp #NET_STATE_POST_SENDING_METHOD
+		bne @not_post	
+			ldx #HTTP_POST
+			jmp @doit
+		@not_post:
+		cmp #NET_STATE_PUT_SENDING_METHOD
+		bne @not_put
+			ldx #HTTP_PUT
+			;jmp #doit
+		@not_put:
 		@doit:
 		txa
 		jsr send_byte_to_nes
@@ -616,6 +674,9 @@
 		rts
 	@url:
 		jsr do_send_url
+		rts
+	@data_len:
+		jsr do_send_data_len
 		rts
 	@data:
 		jsr do_send_data
@@ -653,6 +714,11 @@
 		beq @url
 		cmp #NET_STATE_POST_SENDING_URL
 		beq @url
+
+		cmp #NET_STATE_PUT_SENDING_DATA_LEN
+		beq @data_len
+		cmp #NET_STATE_POST_SENDING_DATA_LEN
+		beq @data_len
 
 		cmp #NET_STATE_PUT_SENDING_DATA
 		beq @data

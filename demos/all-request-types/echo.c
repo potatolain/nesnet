@@ -9,7 +9,7 @@
 #define REQUEST_TYPE_PUT 3
 #define REQUEST_TYPE_DELETE 4
 #define ECHO_SERVER_URL "http://cpprograms.net/devnull/echo.php"
-#define POST_DATA "The quick brown fox jumped over the lasy post request"
+#define POST_DATA "Some data to post with"
 #define PUT_DATA "The quick brown fox jumped over the lazy put request"
 
 static unsigned char currentPadState, nesnetConnected, nesnetConnectionAttempts;
@@ -39,7 +39,7 @@ void main(void) {
 		}
 
 		// Test for A button - if we failed to connect, this allows us to retry.
-		if (pad_trigger(0) & PAD_A) {
+		if (nesnet_pad_poll() & PAD_A) {
 			nesnetConnected = nesnet_check_connected();
 
 			// Complain if the connection fails.
@@ -58,6 +58,7 @@ void main(void) {
 	// Now we wait for input from the user, and do internet-y things!
 	while(1) {
 		currentPadState = nesnet_pad_poll();
+		
 		if (http_request_complete()) {
 			if (currentPadState & PAD_UP) {
 				requestType = REQUEST_TYPE_GET;
