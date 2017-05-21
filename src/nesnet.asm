@@ -8,7 +8,7 @@
 .import popa,popax,pusha, pushax
 .import _nesnet_buffer
 
-; Some constant you probably don't want to play with here. They aren't particularly clear in what they do w/o looking at code.
+; Some constants you probably don't want to play with here. They aren't particularly clear in what they do w/o looking at code.
 ; If you know what you're doing, have at!
 .define INCOMING_BYTE_DELAY 50 ; How long do we wait between incoming bytes?
 .define OUTGOING_BIT_DELAY 100 ; How much delay do we put between each bit we send out in order to tell the fake "controller" 1/0?
@@ -69,18 +69,6 @@
 
 ; TODO: macros cannot be placed in scopes - find a way to make these not risk clashing with someone else's stuff
 ; Maybe as simple as HttpLib_phy and HttpLib_ply, etc. Would be nice if there were a cleaner way though.
-.macro phy
-	sta NET_TEMP
-	tya
-	pha
-	lda NET_TEMP
-.endmacro
-.macro ply
-	sta NET_TEMP
-	pla
-	tay
-	lda NET_TEMP
-.endmacro
 .macro phx
 	sta NET_TEMP
 	txa
@@ -371,111 +359,6 @@
 
 				
 			rts
-
-; FIXME: Baleeted
-/*	get_nes_response:
-		ldx #0
-		ldy #0
-		@loop_zero:
-			jsr get_pad_values_no_retry ; Wait until we start seeing real bytes flow in
-			cmp #0
-			bne @escape_zero
-			inx
-			jsr NESNET_WAIT_NMI ; Play music n stuff while we wait...
-			cpx #NESNET_RESPONSE_WAIT_TIME
-			bne @loop_zero
-			jmp @get_complete_failure ; If we get to this point, it's never responding...
-
-		@escape_zero:
-
-
-		; Ignore the first char all 3 times it shows up.
-		jsr get_pad_values_no_retry
-		jsr get_pad_values_no_retry ; Done ignoring...
-
-		; Ignore the next two chars too 
-		; TODO: Determine why this helps.
-		jsr get_pad_values
-		jsr get_pad_values
-		
-
-		jsr get_pad_values
-		; Read status code for later user.
-		sta NET_RESPONSE_CODE
-		jsr get_pad_values
-		sta NET_RESPONSE_CODE+1
-		dec NET_RESPONSE_CODE+1
-
-		jsr get_pad_values
-		sta RESPONSE_LENGTH
-		jsr get_pad_values
-		sta RESPONSE_LENGTH+1
-		dec RESPONSE_LENGTH+1
-		jsr NESNET_WAIT_NMI
-
-		; TODO: Can we do something smart with RESPONSE_LENGTH and MAX_LENGTH to save 2 bytes in zp?
-		lda RESPONSE_LENGTH+1
-		cmp MAX_LENGTH+1
-		bcc @use_response_length
-		bne @dont_use_response_length
-			; Okay, they're equal... compare lo byte
-			lda RESPONSE_LENGTH
-			cmp MAX_LENGTH
-			bcc @use_response_length
-			; Else, use max length; fallthru.
-		@dont_use_response_length:
-			lda MAX_LENGTH+1
-			sta RESPONSE_LENGTH+1
-			lda MAX_LENGTH
-			sta RESPONSE_LENGTH
-		@use_response_length:
-
-		jsr NESNET_WAIT_NMI
-
-		ldy #0
-
-		@loop: 
-			jsr get_pad_values
-			sta (RESPONSE), y
-			dec RESPONSE_LENGTH
-			lda RESPONSE_LENGTH
-			and #%00000001
-			cmp #0
-			bne @no_sleep
-			@sleep:
-				jsr NESNET_WAIT_NMI
-			@no_sleep:
-			lda RESPONSE_LENGTH
-			cmp #255
-			bne @no_zeroing_response
-				; Okay, we went over 255 bytes. 
-				
-				; Did we go over the full length?
-				dec RESPONSE_LENGTH+1
-				lda RESPONSE_LENGTH+1
-				cmp #255
-				beq @after_data ; Else just kinda carry on...
-			@no_zeroing_response:
-			iny
-			cpy #0
-			bne @loop
-			inc RESPONSE+1
-			jmp @loop
-
-		@after_data:
-		lda #0
-		sta (RESPONSE), y ; null terminate the string...
-
-		rts
-	; Part of the above method... if all goes wrong, tell us.
-	@get_complete_failure:
-		lda #0
-		sta (RESPONSE), y
-		lda #<(599)
-		sta NET_RESPONSE_CODE
-		lda #>(599)
-		sta NET_RESPONSE_CODE+1
-		rts*/
 
 	do_handshake:
 		inc NET_RESPONSE_CODE
