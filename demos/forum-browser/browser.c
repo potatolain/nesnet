@@ -157,7 +157,7 @@ void main(void) {
 	put_str(NTADR_A(3,27), "Inspired by ConnectedNES");
 	put_str(NTADR_A(2,9),"Press a to browse the");
 	put_str(NTADR_A(2,10),"most recent forum posts.");
-	put_str(NTADR_A(2,12), "Start to toggle music");
+	put_str(NTADR_A(2,12), "Start toggles music");
 	put_str(NTADR_A(2,13), "After the Rain by Shiru");
 	put_str(NTADR_A(2,18), "Waiting for NESNet...");
 
