@@ -113,7 +113,7 @@ void show_boilerplate() {
 	put_str(NTADR_A(3,27), "Inspired by ConnectedNES");
 	put_str(NTADR_A(2,9),"Press a direction to");
 	put_str(NTADR_A(2,10),"make a request.");
-	put_str(NTADR_A(2,12), "UP:   Get   DOWN: Delete");
+	put_str(NTADR_A(2,12), "UP:   Get   DOWN:  Delete");
 	put_str(NTADR_A(2,13), "LEFT: Post  RIGHT: Put");
 }
 

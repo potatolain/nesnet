@@ -19,16 +19,49 @@
 .define HTTP_POST		'A'
 .define HTTP_DELETE		'C'
 
-.define NET_STATE_IDLE					0
-.define NET_STATE_GET_INIT 				1
-.define NET_STATE_GET_HANDSHAKE 		2
-.define NET_STATE_GET_SENDING_METHOD	3
-.define NET_STATE_GET_SENDING_URL	 	4
-.define NET_STATE_GET_WAITING			5
-.define NET_STATE_GET_RES_CODE			6
-.define NET_STATE_GET_RES_LENGTH		7
-.define NET_STATE_GET_RECEIVING_BYTES	8
-.define NET_STATE_GET_DONE				9
+.define NET_STATE_IDLE						0
+
+.define NET_STATE_GET_INIT 					1
+.define NET_STATE_GET_HANDSHAKE 			2
+.define NET_STATE_GET_SENDING_METHOD		3
+.define NET_STATE_GET_SENDING_URL	 		4
+.define NET_STATE_GET_WAITING				5
+.define NET_STATE_GET_RES_CODE				6
+.define NET_STATE_GET_RES_LENGTH			7
+.define NET_STATE_GET_RECEIVING_BYTES		8
+.define NET_STATE_GET_DONE					9
+
+.define NET_STATE_DELETE_INIT 				51
+.define NET_STATE_DELETE_HANDSHAKE 			52
+.define NET_STATE_DELETE_SENDING_METHOD		53
+.define NET_STATE_DELETE_SENDING_URL	 	54
+.define NET_STATE_DELETE_WAITING			55
+.define NET_STATE_DELETE_RES_CODE			56
+.define NET_STATE_DELETE_RES_LENGTH			57
+.define NET_STATE_DELETE_RECEIVING_BYTES	58
+.define NET_STATE_DELETE_DONE				59
+
+.define NET_STATE_POST_INIT 				101
+.define NET_STATE_POST_HANDSHAKE 			102
+.define NET_STATE_POST_SENDING_METHOD		103
+.define NET_STATE_POST_SENDING_URL	 		104
+.define NET_STATE_POST_SENDING_DATA			105
+.define NET_STATE_POST_WAITING				106
+.define NET_STATE_POST_RES_CODE				107
+.define NET_STATE_POST_RES_LENGTH			108
+.define NET_STATE_POST_RECEIVING_BYTES		109
+.define NET_STATE_POST_DONE					110
+
+.define NET_STATE_PUT_INIT 					101
+.define NET_STATE_PUT_HANDSHAKE 			102
+.define NET_STATE_PUT_SENDING_METHOD		103
+.define NET_STATE_PUT_SENDING_URL	 		104
+.define NET_STATE_PUT_SENDING_DATA			105
+.define NET_STATE_PUT_WAITING				106
+.define NET_STATE_PUT_RES_CODE				107
+.define NET_STATE_PUT_RES_LENGTH			108
+.define NET_STATE_PUT_RECEIVING_BYTES		109
+.define NET_STATE_PUT_DONE					110
 
 
 ; Note: Since ca65 is kind of a pain, all exports are at the bottom. 
@@ -72,7 +105,7 @@
 	pha
 	lda #1
 	sta NET_REQUEST_IN_PROGRESS
-	lda #NET_STATE_GET_INIT
+	lda #METHOD
 	sta NET_CURRENT_STATE
 	pla
 	sta MAX_LENGTH
@@ -97,6 +130,8 @@
 	pha
 	lda #1
 	sta NET_REQUEST_IN_PROGRESS
+	lda #METHOD
+	sta NET_CURRENT_STATE
 	pla
 
 	sta MAX_LENGTH
@@ -215,16 +250,16 @@
 		.asciiz "http:///test"
 
 	get: 
-		http_get_style_request HTTP_GET
+		http_get_style_request NET_STATE_GET_INIT
 
 	delete:
-		http_get_style_request HTTP_DELETE
+		http_get_style_request NET_STATE_DELETE_INIT
 
 	post: 
-		http_post_style_request HTTP_POST
+		http_post_style_request NET_STATE_POST_INIT
 
 	put:
-		http_post_style_request HTTP_PUT	
+		http_post_style_request NET_STATE_PUT_INIT
 
 	request_complete:
 		; Need to invert the first bit
@@ -494,6 +529,10 @@
 			inc NET_CURRENT_STATE
 			rts
 
+	do_send_data:
+		; FIXME: Implement me.
+		rts
+
 	do_get_waiting:
 		jsr get_pad_values_no_retry ; Wait until we start seeing real bytes flow in
 		cmp #0
@@ -620,57 +659,144 @@
 	do_cycle: 
 		lda NET_CURRENT_STATE
 		cmp #NET_STATE_IDLE
-		bne @not_idle
-			rts ; Idle, you say? I'm on it, coach!
-		@not_idle:
+		beq @idle
+
 		cmp #NET_STATE_GET_INIT ; Starting a get request? Okay.. 
-		bne @not_get_init
-			; Starting to do a get request... track the progress of that using NET_RESPONSE_CODE, since that won't be set yet.
-			lda #0
-			sta NET_RESPONSE_CODE
-			inc NET_CURRENT_STATE
-			rts
-		@not_get_init:
+		beq @init
+		cmp #NET_STATE_DELETE_INIT
+		beq @init
+
 		cmp #NET_STATE_GET_HANDSHAKE
-		bne @not_get_handshake
-			jsr do_handshake
-			rts
-		@not_get_handshake:
+		beq @handshake
+		cmp #NET_STATE_DELETE_HANDSHAKE
+		beq @handshake
+
 		cmp #NET_STATE_GET_SENDING_METHOD
-		bne @not_sending_method
-			lda #HTTP_GET
-			jsr send_byte_to_nes
-			inc NET_CURRENT_STATE
-			rts
-		@not_sending_method:
+		beq @method
+		cmp #NET_STATE_DELETE_SENDING_METHOD
+		beq @method
+
 		cmp #NET_STATE_GET_SENDING_URL
-		bne @not_get_url
-			jsr do_send_url
-			rts
-		@not_get_url:
+		beq @url
+		cmp #NET_STATE_DELETE_SENDING_URL
+		beq @url
+
 		cmp #NET_STATE_GET_WAITING
-		bne @not_waiting
-			jsr do_get_waiting
-			rts
-		@not_waiting:
+		beq @wait
+		cmp #NET_STATE_DELETE_WAITING
+		beq @wait
+
 		cmp #NET_STATE_GET_RES_CODE
-		bne @not_res_code
-			jsr do_get_res_code
-			rts
-		@not_res_code:
+		beq @res_code
+		cmp #NET_STATE_DELETE_RES_CODE
+		beq @res_code
+
 		cmp #NET_STATE_GET_RES_LENGTH
-		bne @not_res_length
-			jsr do_get_res_len
-			rts
-		@not_res_length:
+		beq @res_len
+		cmp #NET_STATE_DELETE_RES_LENGTH
+		beq @res_len
+
 		cmp #NET_STATE_GET_RECEIVING_BYTES
-		bne @not_bytes
-			jsr get_response
-			rts
-		@not_bytes:
-		; If we don't have a known one (done requests intentionally left out) let's assume the request is done.
+		beq @receive
+		cmp #NET_STATE_DELETE_RECEIVING_BYTES
+		beq @receive
+
+		; Put the other half of the methods on the other side of these methods, so we don't have to do any
+		; funky logic to jump to them. (Range of -128-127 for beq)
+		jmp @after_methods
+	@idle: 
+		rts
+	@init: 
 		lda #0
-		sta NET_REQUEST_IN_PROGRESS
+		sta NET_RESPONSE_CODE
+		inc NET_CURRENT_STATE
+		rts
+	@handshake: 
+		jsr do_handshake
+		rts
+	@method: 
+		lda NET_CURRENT_STATE
+		cmp #NET_STATE_GET_SENDING_METHOD
+		bne @not_get
+			ldx #HTTP_GET
+			jmp @doit
+		@not_get:
+		cmp #NET_STATE_DELETE_SENDING_METHOD
+		bne @not_delete
+			ldx #HTTP_DELETE
+			jmp @doit
+		@not_delete:
+		@doit:
+		txa
+		jsr send_byte_to_nes
+		inc NET_CURRENT_STATE
+		rts
+	@url:
+		jsr do_send_url
+		rts
+	@data:
+		jsr do_send_data
+		rts
+	@wait:
+		jsr do_get_waiting
+		rts
+	@res_code:
+		jsr do_get_res_code
+		rts
+	@res_len:
+		jsr do_get_res_len
+		rts
+	@receive:
+		jsr get_response
+		rts
+	@after_methods:
+
+		cmp #NET_STATE_PUT_INIT ; Starting a get request? Okay.. 
+		beq @init
+		cmp #NET_STATE_POST_INIT
+		beq @init
+
+		cmp #NET_STATE_PUT_HANDSHAKE
+		beq @handshake
+		cmp #NET_STATE_POST_HANDSHAKE
+		beq @handshake
+
+		cmp #NET_STATE_PUT_SENDING_METHOD
+		beq @method
+		cmp #NET_STATE_POST_SENDING_METHOD
+		beq @method
+
+		cmp #NET_STATE_PUT_SENDING_URL
+		beq @url
+		cmp #NET_STATE_POST_SENDING_URL
+		beq @url
+
+		cmp #NET_STATE_PUT_SENDING_DATA
+		beq @data
+		cmp #NET_STATE_POST_SENDING_DATA
+		beq @data
+
+		cmp #NET_STATE_PUT_WAITING
+		beq @wait
+		cmp #NET_STATE_POST_WAITING
+		beq @wait
+
+		cmp #NET_STATE_PUT_RES_CODE
+		beq @res_code
+		cmp #NET_STATE_POST_RES_CODE
+		beq @res_code
+
+		cmp #NET_STATE_PUT_RES_LENGTH
+		beq @res_len
+		cmp #NET_STATE_POST_RES_LENGTH
+		beq @res_len
+
+		cmp #NET_STATE_PUT_RECEIVING_BYTES
+		beq @receive
+		cmp #NET_STATE_POST_RECEIVING_BYTES
+		beq @receive
+
+
 		rts
 
 .endscope
