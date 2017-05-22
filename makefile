@@ -5,3 +5,4 @@ all:
 	cd demos/forum-browser && make
 	cd demos/hello-world && make
 	cd demos/character-movement && make
+	cd demos/all-request-types && make
