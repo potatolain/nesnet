@@ -6,30 +6,29 @@ html
   body
     .container
       .header.clearfix
-        nav
-          //- ul.nav.nav-pills.pull-right
-            li.active(role='presentation')
-              a(href='#') Home
-            li(role='presentation')
-              a(href='#') About
-            li(role='presentation')
-              a(href='#') Contact
         h3.text-muted NESNet Character Movement Demo
       .jumbotron
         h1 Move Around!
         p.lead
-          | Clicking below will move your character around. This movement will be visible on your console, too.
+          | W/A/S/D will move your character around. This movement will be visible on your console, too.
         p
           .panel.panel-default.world
             .panel-body
               .character O
-        p.pull-left
-          | X: 
-          span.positionX #{positionX}
-        .clearfix
-        p.pull-left
-          | Y: 
-          span.positionY #{positionY}
+        .row
+          .col-md-4
+            p
+              | X: 
+              span.positionX #{positionX}
+          .col-md-4
+            p
+              | Y: 
+              span.positionY #{positionY}
+          .col-md-4
+            p
+              | Direction: 
+              span.direction #{direction}
+
 
           //-a.btn.btn-lg.btn-success(href='#', role='button') Sign up today
       footer.footer
