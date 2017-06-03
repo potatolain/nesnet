@@ -24,29 +24,9 @@ void main(void) {
 	requestType = REQUEST_TYPE_NONE;
 
 	show_boilerplate();
-	put_str(NTADR_A(2,18), "Waiting for NESNet...");
+	put_str(NTADR_A(2, 18), "Waiting for NESNet...");
 	ppu_on_all();
-
-	// Wait for the NESNet device to be connected
-	while (!nesnetConnected) {
-		// Automatically try to connect up to 5 times before showing an error.
-		if (nesnetConnectionAttempts < 5) {
-			nesnetConnected = nesnet_check_connected();
-			++nesnetConnectionAttempts;
-		} else if (nesnetConnectionAttempts == 5) {
-			show_connection_failure();
-			++nesnetConnectionAttempts; // Only show the connection failure message once, then bump this up again to avoid repeating.
-		}
-
-		// Test for A button - if we failed to connect, this allows us to retry.
-		if (nesnet_pad_poll() & PAD_A) {
-			nesnetConnected = nesnet_check_connected();
-
-			// Complain if the connection fails.
-			if (!nesnetConnected)
-				show_connection_failure();
-
-		}
+	while (!nesnet_check_connected()) {
 		ppu_wait_nmi();
 	}
 

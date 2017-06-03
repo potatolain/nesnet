@@ -23,25 +23,7 @@ void main(void) {
 	ppu_on_all();
 
 	// Wait for the NESNet device to be connected
-	while (!nesnetConnected) {
-		// Automatically try to connect up to 5 times before showing an error.
-		if (nesnetConnectionAttempts < 5) {
-			nesnetConnected = nesnet_check_connected();
-			++nesnetConnectionAttempts;
-		} else if (nesnetConnectionAttempts == 5) {
-			show_connection_failure();
-			++nesnetConnectionAttempts; // Only show the connection failure message once, then bump this up again to avoid repeating.
-		}
-
-		// Test for A button - if we failed to connect, this allows us to retry.
-		if (pad_trigger(0) & PAD_A) {
-			nesnetConnected = nesnet_check_connected();
-
-			// Complain if the connection fails.
-			if (!nesnetConnected)
-				show_connection_failure();
-
-		}
+	while (!nesnet_check_connected()) {
 		ppu_wait_nmi();
 	}
 
@@ -107,17 +89,6 @@ void show_boilerplate() {
 	put_str(NTADR_A(2,10),"IP.");
 	put_str(NTADR_A(2,12), "Press B to show a random");
 	put_str(NTADR_A(2,13), "word via the setgetgo api");
-}
-
-// If we have a problem connecting to the nesnet device, let the user know.
-void show_connection_failure() {
-	ppu_off();
-	put_str(NTADR_A(2,18), "NESNet device not detected.");
-	put_str(NTADR_A(2,20), "Connect it to the 2nd");
-	put_str(NTADR_A(2,21), "controller port, then reset");
-	put_str(NTADR_A(2,22), "the console.");
-	put_str(NTADR_A(2,24), "Press A to try again.");
-	ppu_on_all();
 }
 
 // Show whatever message is in the "theMessage" variable, as well as a string passed in to describe that message.

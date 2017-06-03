@@ -107,15 +107,6 @@ void clear_screen() {
 	vram_fill(0, 0x03a0);
 }
 
-void show_connection_failure() {
-	ppu_off();
-	put_str(NTADR_A(2,18), "NESNet device not detected.");
-	put_str(NTADR_A(2,20), "Connect to the 2nd");
-	put_str(NTADR_A(2,21), "controller port.");
-	put_str(NTADR_A(2,24), "Press A to retry.");
-	ppu_on_all();
-}
-
 // Quick-n-dirty convert integer to string, to show an error code on our error screen.
 // Hat tip: http://stackoverflow.com/questions/9655202/how-to-convert-integer-to-string-in-c
 char* itoa(int i, char b[]){
@@ -193,29 +184,8 @@ void do_pause() {
 void do_init() {
 	ppu_wait_frame();
 	currentPadState = wrapped_pad_trigger();
-	if (currentPadState & PAD_A) {
-		if (nesnet_check_connected()) {
-			show_home();
-		} else {
-			show_connection_failure();
-		}
-	} else {
-		set_vram_update(NULL);
-		// Poll for the device until we see it connected.
-		if (!nesnetConnected && nesnetConnectionAttempts < 5) {
-			nesnetConnected = nesnet_check_connected();
-			++nesnetConnectionAttempts;
-			if (nesnetConnected) {
-				// If the device is connected, remove connecting message.
-				ppu_off();
-				put_str(NTADR_A(2, 18), "                     ");
-				ppu_on_all();
-			}
-		} else if (nesnetConnectionAttempts == 5) {
-			show_connection_failure();
-			// Increment one more time so we only see this message show up once.
-			++nesnetConnectionAttempts;
-		}
+	if (nesnet_check_connected()) {
+		gameState = GAME_STATE_HOME;
 	}
 
 	do_pause();

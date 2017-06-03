@@ -62,7 +62,7 @@ void main(void) {
 	put_str(NTADR_A(2, 2), "Waiting for NESNet...");
 	ppu_on_all();
 	while (!nesnet_check_connected()) {
-		delay(200);
+		ppu_wait_nmi();
 	}
 	ppu_off();
 	// whitespace to line up with above, to cover the ... at the end.

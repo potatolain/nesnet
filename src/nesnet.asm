@@ -147,80 +147,6 @@
 	adc #0
 	sta URL+1
 	rts
-/*
-
-	jsr do_handshake
-	
-	jsr NESNET_WAIT_NMI
-
-	lda #METHOD
-	jsr send_byte_to_nes
-	jsr NESNET_WAIT_NMI
-
-	; Okay, time to send some data over.
-	ldy #0
-	@string_loop:
-		lda (URL), y
-		cmp #0
-		beq @break_loop
-
-		jsr send_byte_to_nes
-		iny
-		tya
-		and #%00000001
-		cmp #0
-		bne @skip_waiting
-			jsr NESNET_WAIT_NMI
-		@skip_waiting:
-		cpy #254
-		bne @string_loop ; TODO: Allow for more than 255 chars. Also include nmi wait logic when this happens.
-	@break_loop:
-
-	; Finally, send a 0 byte
-	lda #0
-	jsr send_byte_to_nes
-
-	jsr NESNET_WAIT_NMI
-	
-	; Okay... next, we need to tell it about some of our data
-	lda HTTP_DATA_LENGTH
-	jsr send_byte_to_nes
-
-	jsr NESNET_WAIT_NMI
-	lda HTTP_DATA_LENGTH+1
-	jsr send_byte_to_nes
-	; Here we go!
-	ldy #0
-	@data_loop:
-		lda (HTTP_DATA), y
-		jsr send_byte_to_nes
-		jsr NESNET_WAIT_NMI
-
-		iny
-		cpy #0
-		bne @no_loopy
-			inc HTTP_DATA+1
-		@no_loopy:
-		dec HTTP_DATA_LENGTH
-		lda HTTP_DATA_LENGTH
-		cmp #255
-		bne @not_dec
-			dec HTTP_DATA_LENGTH+1
-			lda HTTP_DATA_LENGTH+1
-			cmp #255
-			beq @after_data
-		@not_dec:
-		jmp @data_loop
-	@after_data:
-
-	jsr get_nes_response
-	
-	pha
-	lda #0
-	sta NET_REQUEST_IN_PROGRESS
-	pla
-
-*/
 	rts
 .endmacro
 
@@ -263,11 +189,25 @@
 		rts
 
 
+	; Test if your connection is ready. This actually hides a lot from you. Just call it until it's happy.
 	test_connection:
-		; FIXME: Need a better way to determine this. How do we do this with the new setup?
-		; Maybe something to trigger warmup, then another one that checks warmup?
-		lda #1
-		rts
+		lda _nesnet_buffer+18
+		cmp #1
+		beq @happy_end
+
+		lda NET_REQUEST_IN_PROGRESS
+		cmp #1
+		bne @not_in_progress
+			jsr do_cycle
+			jmp @bad_end
+		@not_in_progress:
+
+		; Request not in progress? If it looks like we have a valid response, test...
+		lda _nesnet_buffer
+		cmp #'T'
+		beq @test_request
+
+		; Else, kick off a test.
 		lda #<(test_url)
 		ldx #>(test_url)
 		jsr pushax
@@ -280,10 +220,9 @@
 		ldx #0
 
 		jsr get
+		jmp @bad_end
 		
-		lda _nesnet_buffer
-		cmp #'T'
-		bne @bad_end
+		@test_request:
 		lda _nesnet_buffer+1
 		cmp #'E'
 		bne @bad_end
@@ -293,6 +232,10 @@
 		lda _nesnet_buffer+3
 		cmp #'T'
 		bne @bad_end
+		@happier_end:
+			lda #1
+			sta _nesnet_buffer+18
+			; Fall through to happy end
 		@happy_end: 
 			lda #1
 			ldx #0
