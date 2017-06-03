@@ -1,7 +1,7 @@
 #include "lib/neslib.h"
 #include "../../src/nesnet.h"
 
-#define POSITION_URL "http://192.168.1.201:3000/position"
+#define POSITION_URL "http://192.168.1.201:3000/update"
 #define SPRITE_INTERNET 0x20
 #define SPRITE_PLAYER 0x10
 
@@ -14,7 +14,7 @@
 unsigned char currentPadState;
 unsigned char i;
 char currentMessage[16];
-void every_frame();
+char dataBuffer[4];
 
 // Local to this file.
 static unsigned char showMessageA, playerX, playerY, waitCycle;
@@ -99,7 +99,10 @@ void main(void) {
 			}
 
 			if (waitCycle == 0) {
-				http_get(POSITION_URL, currentMessage, 8);
+				dataBuffer[0] = playerX;
+				dataBuffer[1] = playerY;
+				// TODO: Direction
+				http_post(POSITION_URL, dataBuffer, 4, currentMessage, 8);
 				waitCycle = REQUEST_DELAY;
 			} else {
 				waitCycle--;

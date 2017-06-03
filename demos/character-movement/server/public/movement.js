@@ -12,16 +12,18 @@
 	DIRECTION_LOOKUP[DIRECTION_LEFT] = 'left';
 	DIRECTION_LOOKUP[DIRECTION_RIGHT] = 'right';
 
-	var positionX = 0,
-		positionY = 0,
+	var sprites,
+		p1PositionX = 0,
+		p1PositionY = 0,
 		direction = DIRECTION_DOWN,
 		moveLock = false;
 
 	function getLocationFromServer() {
 		$.get('/position.json', function(data) {
-			positionX = data.x;
-			positionY = data.y;
-			direction = data.direction;
+			sprites = data;
+			p1PositionX = data[0].x;
+			p1PositionY = data[0].y;
+			direction = data[0].direction;
 			redrawPosition();
 		});
 	}
@@ -31,10 +33,11 @@
 			return;
 		moveLock = true;
 		$.get('/update/'+x+'/'+y+'/'+direction+'.json', function(data) {
+			sprites = data;
 			moveLock = false;
-			positionX = data.x;
-			positionY = data.y;
-			direction = data.direction;
+			p1PositionX = data[0].x;
+			p1PositionY = data[0].y;
+			direction = data[0].direction;
 			redrawPosition();
 		});
 	}
@@ -51,10 +54,15 @@
 	}
 
 	function redrawPosition() {
-		$('span.positionX').text(positionX);
-		$('span.positionY').text(positionY);
+		$('span.p1PositionX').text(p1PositionX);
+		$('span.p1PositionY').text(p1PositionY);
 		$('span.direction').text(DIRECTION_LOOKUP[direction]);
-		$('.panel.world .character').css({left: (2*positionX), top: (2*positionY)});
+		$('.panel.world .character').remove();
+
+		for (var obj in sprites) {
+			$('.panel.world .panel-body').append('<div class="character">'+sprites[obj].character+'</div>');
+			$('.panel.world .character').last().css({left: (2*sprites[obj].x), top: (2*sprites[obj].y)});
+		}
 	}
 
 	$(document).ready(function() {
@@ -75,28 +83,32 @@
 			switch (event.which) {
 				case 87: // w
 					direction = DIRECTION_UP;
-					positionY -= MOVEMENT_SPEED;
+					p1PositionY -= MOVEMENT_SPEED;
 					break;
 				case 65: // a
 					direction = DIRECTION_LEFT;
-					positionX -= MOVEMENT_SPEED;
+					p1PositionX -= MOVEMENT_SPEED;
 					break;
 				case 83: // s
 					direction = DIRECTION_DOWN;
-					positionY += MOVEMENT_SPEED;
+					p1PositionY += MOVEMENT_SPEED;
 					break;
 				case 68: // d
 					direction = DIRECTION_RIGHT;
-					positionX += MOVEMENT_SPEED;
+					p1PositionX += MOVEMENT_SPEED;
 					break;
 
 				default: 
 					return; // Do nothing!
 			}
-			positionX = normalizePosition(positionX);
-			positionY = normalizePosition(positionY);
+			p1PositionX = normalizePosition(p1PositionX);
+			p1PositionY = normalizePosition(p1PositionY);
 
-			setLocationOnServer(positionX, positionY, direction);
+			setLocationOnServer(p1PositionX, p1PositionY, direction);
 		});
+
+		setInterval(function() {
+			getLocationFromServer();
+		}, 2000);
 	});
 })();
