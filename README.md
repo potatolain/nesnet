@@ -122,9 +122,10 @@ After that, use it as you'd use any other library.
 - **Inputs**: 
   - *N/A*
 - **Returns**: 1 if nesnet device is connected and working, 0 otherwise.
-- **Description**: Tests the connection to the nesnet device. You should generally run this when the
-               console starts up, and wait until you get a good response. This avoids issues with the photon 
-               startup causing bogus results.
+- **Description**: Tests the connection to the nesnet device. You should generally run this continuously after
+               console starts up, or after some input, and wait until you get a good response. It should be
+               run once per frame, like nesnet_do_cycle. You do not need to run nesnet_do_cycle while running this.
+               This avoids issues with the photon startup causing bogus results.
 
 #### void http_get(unsigned char* url, unsigned char* buffer, int maxLength)
 - **Inputs**: 
@@ -172,6 +173,10 @@ After that, use it as you'd use any other library.
 - **Returns**: Buttons currently pressed by the user.
 - **Description**: This method *must be used instead of polling the pad directly or using neslib*! This method is
                    aware of nesnet and avoids corrupting messages to/from the NES.
+
+#### void nesnet_do_cycle()
+- **Description**: Must be run once per nmi to do http requests in the background. Also seeds input for
+                   nesnet_poad_poll and the like.
 
 
 ## How can I build the photon firmware?
