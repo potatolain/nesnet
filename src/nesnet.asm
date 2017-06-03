@@ -276,10 +276,6 @@
 					inx
 					cpx #OUTGOING_BIT_DELAY
 					bne @loop
-				plx
-				inx
-				cpx #8
-				bne @byte_loop
 				; Okay, really brief... let's copy the latest latch into the p1 buffer
 				@padPollPort:
 					ldx NET_P1_BUFFER_POS
@@ -302,16 +298,21 @@
 					@no_rot:
 					stx NET_P1_BUFFER_POS
 
+				plx
+				inx
+				cpx #8
+				bne @byte_loop
+
+
 				
 			rts
 
 	do_handshake:
 		inc NET_RESPONSE_CODE
 		lda NET_RESPONSE_CODE
-		cmp #5 ; 1-4 are just noops while we wait 
-		bcc @done
+		cmp #1 ; 1-4 are just noops while we wait 
 		beq @do_latch
-		cmp #11 ; more noops.
+		cmp #3 ; more noops.
 		bcc @done
 
 		; Okay you made it.. next step.
@@ -408,9 +409,11 @@
 			rts
 
 	do_get_waiting:
-		jsr get_pad_values_no_retry ; Wait until we start seeing real bytes flow in
-		cmp #0
-		bne @escape_zero
+		.repeat 3
+			jsr get_pad_values_no_retry ; Wait until we start seeing real bytes flow in
+			cmp #0
+			bne @escape_zero
+		.endrepeat
 		inc NET_RESPONSE_CODE
 		lda NET_RESPONSE_CODE
 		cmp #NESNET_RESPONSE_WAIT_TIME
@@ -584,6 +587,7 @@
 		lda #0
 		sta NET_RESPONSE_CODE
 		inc NET_CURRENT_STATE
+		jsr get_pad_values ; Just trigger input so the pad stuff works.
 		rts
 	@handshake: 
 		jsr do_handshake

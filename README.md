@@ -209,7 +209,7 @@ directory and run `make`. It should be that simple. If you'd like to flash your 
   find tools/cc65 -type f -executable -exec cp {} tools/cc65/bin/ \;
   ```
 
-### Universal
+### All Operating Systems
 
 At this point, you should be able to run `make` in the the base folder for the demo and build it. There are other tools
 and commands built into the makefile. See the various readme files in the tools folder for more details. A rom file will
