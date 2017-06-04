@@ -248,17 +248,17 @@ this possible.
 6. The C++ firmware begins sending the message back through the controller one byte at a time.
 7. The assembly library reads controller presses into the output buffer as characters. These are your results.
 
-The data coming from the photon firmware into the NES is pretty straightforward, as simply simulating its regular behavior
-normally sends a byte of data with each press. We can poll the controller very rapidly, so we can get the response in a
-timely manner.
+The data coming from the photon firmware into the NES is pretty straightforward, as we simply emulate regular keypresses.
+Conveniently, the states of all 8 buttons on the NES fit into one byte too, so we end up doing regular input methods.
+We can poll the buttons on the controller very rapidly, so we can get the response in a decently timely manner.
 
 However, sending the URLs through the NES controller is more involved. We can send exactly one signal to the NES controller -
 the latch signal, which tells it to start sending keypresses. This is a quick pulse on and off. This can trigger an event, 
 but on its own does not seem useful. However, if we consider time as another dimension, we have more options. When the assembly
 library needs to send a bit to the C++ firmware, it will send either one latch signal, or two in quick succession, then stop
 for a known amount of time. The C++ firmware starts a timer when it gets a latch signal, and sets the current bit to 0. If it
-gets another bit within a short timeframe, it changes the current bit to one. After the set time is elapsed, the bit is written
-into the current byte, and the process repeats.
+gets another latch within a short timeframe, it changes the current bit to one. After the set time is elapsed, the bit is written
+into a position in the current byte, and the process repeats.
 
 This sounds like it would be very slow, and to a degree it is. However, this delay is measured in microseconds for each bit, so
 the delay is bearable. (Especially on an older console like the NES. We expect it to be slow!) 
