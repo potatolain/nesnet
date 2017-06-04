@@ -110,7 +110,7 @@
 
 		setInterval(function() {
 			getLocationFromServer();
-		}, 2000);
+		}, 500);
 
 		setInterval(function() {
 			animState = ! animState;
