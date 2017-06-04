@@ -185,7 +185,7 @@ void do_init() {
 	ppu_wait_frame();
 	currentPadState = wrapped_pad_trigger();
 	if (nesnet_check_connected()) {
-		gameState = GAME_STATE_HOME;
+		show_home();
 	}
 
 	do_pause();
