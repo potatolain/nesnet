@@ -2,26 +2,34 @@
 #include "../../src/nesnet.h"
 
 #define POSITION_URL "http://192.168.1.201:3000/update"
-#define SPRITE_INTERNET 0x20
+#define SPRITE_INTERNET 0x00
 #define SPRITE_PLAYER 0x10
+#define TILE_INTERNET 0xe0
+#define TILE_PLAYER 0xe4
+#define MOVEMENT_SPEED 2
 
 #define DUMMY_SONG 0
 #define SFX_BOING 0 
 
 #define REQUEST_DELAY 50
 
-// Globals! Defined as externs in src/globals.h
+// Globals!
 unsigned char currentPadState;
 unsigned char i;
+unsigned char frameCounter;
 char currentMessage[16];
-char dataBuffer[4];
+
+// Defined in crt0.asm with a binary file
+extern const char main_palette[16];
 
 // Local to this file.
 static unsigned char showMessageA, playerX, playerY, waitCycle;
 static unsigned char playMusic;
 static unsigned char chrBank;
+static unsigned char animOffset;
 static unsigned char statusCode;
 static char screenBuffer[20];
+static char dataBuffer[4];
 
 // Put a string on the screen at X/Y coordinates given in adr.
 void put_str(unsigned int adr, const char *str) {
@@ -52,8 +60,8 @@ void main(void) {
 	music_play(DUMMY_SONG);
 	music_pause(playMusic);
 
-	pal_col(1,0x19);//set dark green color
-	pal_col(17,0x19);
+	pal_bg(main_palette);
+	pal_spr(main_palette);
 
 
 	// Show a message to the user.
@@ -73,6 +81,8 @@ void main(void) {
 	playerY = 50;
 
 	waitCycle = 200;
+	animOffset = 0;
+	frameCounter = 0;
 
 
 	// Now we wait for input from the user, and do dumb things!
@@ -80,22 +90,46 @@ void main(void) {
 
 		currentPadState = nesnet_pad_poll();
 		if (currentPadState & PAD_UP) {
-			playerY -= 5;
+			playerY -= MOVEMENT_SPEED;
 		} else if (currentPadState & PAD_DOWN) {
-			playerY += 5;
+			playerY += MOVEMENT_SPEED;
 		}
 
 		if (currentPadState & PAD_LEFT) {
-			playerX -= 5;
+			playerX -= MOVEMENT_SPEED;
 		} else if (currentPadState & PAD_RIGHT) {
-			playerX += 5;
+			playerX += MOVEMENT_SPEED;
 		}
-		oam_spr(playerX, playerY, 0x03, 0, SPRITE_PLAYER);
+
+		// Alternate between two animations for each sprite.
+		if (frameCounter & 0x10) {
+			animOffset = 0;
+		} else {
+			animOffset = 2;
+		}
+		
+		oam_spr(playerX, playerY, TILE_PLAYER+animOffset, 3, SPRITE_PLAYER);
+		oam_spr(playerX+8, playerY, TILE_PLAYER+animOffset+1, 3, SPRITE_PLAYER+4);
+		oam_spr(playerX, playerY+8, TILE_PLAYER+animOffset+16, 3, SPRITE_PLAYER+8);
+		oam_spr(playerX+8, playerY+8, TILE_PLAYER+animOffset+17, 3, SPRITE_PLAYER+12);
+
+		// Hackily animate the crab every frame, assuming he's on screen.
+		(*(char*)(0x201 + SPRITE_INTERNET)) = TILE_INTERNET+animOffset;
+		(*(char*)(0x205 + SPRITE_INTERNET)) = TILE_INTERNET+animOffset+1;
+		(*(char*)(0x209 + SPRITE_INTERNET)) = TILE_INTERNET+animOffset+16;
+		(*(char*)(0x20d + SPRITE_INTERNET)) = TILE_INTERNET+animOffset+17;
 
 		// Constantly run http gets to get latest position... waitCycle inserts a small delay
 		if (http_request_complete()) { 
 			if (waitCycle == REQUEST_DELAY && http_response_code() == 200) {
-				oam_spr(currentMessage[0], currentMessage[1], 0x20, 0, SPRITE_INTERNET);
+				for (i = 0; i != 3; ++i) {
+					oam_spr(currentMessage[0]+(i%2), currentMessage[1]+(i>>1), TILE_INTERNET, 0, SPRITE_INTERNET+(i<<2));
+				}
+					oam_spr(currentMessage[0], currentMessage[1], TILE_INTERNET+animOffset, 3, SPRITE_INTERNET);
+					oam_spr(currentMessage[0]+8, currentMessage[1], TILE_INTERNET+animOffset+1, 3, SPRITE_INTERNET+4);
+					oam_spr(currentMessage[0], currentMessage[1]+8, TILE_INTERNET+animOffset+16, 3, SPRITE_INTERNET+8);
+					oam_spr(currentMessage[0]+8, currentMessage[1]+8, TILE_INTERNET+animOffset+17, 3, SPRITE_INTERNET+12);
+
 			}
 
 			if (waitCycle == 0) {
@@ -110,6 +144,7 @@ void main(void) {
 		}
 		nesnet_do_cycle();
 		ppu_wait_nmi();
+		frameCounter++;
 
 
 	}

@@ -234,6 +234,11 @@ detectNTSC:
 	.include "lib/neslib.asm"
 	.include "../../src/nesnet.asm"
 
+.export _main_palette
+_main_palette: 
+	.incbin "graphics/main.pal"
+
+
 .segment "RODATA"
 
 music_data:
@@ -258,3 +263,4 @@ sounds_data:
 .segment "CHARS"
 
 .incbin "graphics/ascii.chr"
+

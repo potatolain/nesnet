@@ -13,6 +13,7 @@
 	DIRECTION_LOOKUP[DIRECTION_RIGHT] = 'right';
 
 	var sprites,
+		animState = 0,
 		p1PositionX = 0,
 		p1PositionY = 0,
 		direction = DIRECTION_DOWN,
@@ -110,5 +111,14 @@
 		setInterval(function() {
 			getLocationFromServer();
 		}, 2000);
+
+		setInterval(function() {
+			animState = ! animState;
+			if (animState) {
+				$('.panel.world').addClass('anim1').removeClass('anim2');
+			} else {
+				$('.panel.world').addClass('anim2').removeClass('anim1');
+			}
+		}, 500);
 	});
 })();

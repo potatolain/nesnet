@@ -14,3 +14,6 @@ internet.
 
 You can move your sprite by using the control pad. You can also connect to the http address with your web
 browser and move a second character there. There is no collision logic. Enjoy.
+
+Sprites stolen from [Missing Lands](http://cpprograms.net/classic-gaming/missing-lands/), 
+my Ludum Dare 38 entry.

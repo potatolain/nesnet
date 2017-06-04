@@ -80,13 +80,32 @@ body {
   width: 480px;
   height: 480px;
   position: relative;
+  background-color: #000;
 }
 
 .character {
-  width: 16px;
-  height: 16px;
+  width: 32px;
+  height: 32px;
   font-size: 16px;
   position: absolute;
   left: 9999px;
   top: 9999px;
+  background-image: url(/static/ascii.png);
+  background-size: 800%;
+}
+
+.panel.world .character:first-child {
+  background-position: 0px 32px;
+}
+
+.panel.world.anim2 .character:first-child {
+  background-position: -32px 32px;
+}
+
+.panel.world .character:last-child {
+  background-position: -64px 32px;
+}
+
+.panel.world.anim2 .character:last-child {
+  background-position: -96px 32px;
 }
