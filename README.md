@@ -11,6 +11,8 @@ very quickly.)
 -  [Photon Firmware](https://circleci-tkn.rhcloud.com/api/v1/project/cppchriscpp/nesnet/tree/master/latest/artifacts/photon_firmware.bin)
 -  [Basic Demo Rom](https://circleci-tkn.rhcloud.com/api/v1/project/cppchriscpp/nesnet/tree/master/latest/artifacts/hello.nes)
 -  [Forum Browser Rom](https://circleci-tkn.rhcloud.com/api/v1/project/cppchriscpp/nesnet/tree/master/latest/artifacts/browser.nes)
+-  [All Request Types](https://circleci-tkn.rhcloud.com/api/v1/project/cppchriscpp/nesnet/tree/master/latest/artifacts/echo.nes)
+-  [Asynchronouse Demo](https://circleci-tkn.rhcloud.com/api/v1/project/cppchriscpp/nesnet/tree/master/latest/artifacts/world.nes)
 
 ## What is this?
 
