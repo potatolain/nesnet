@@ -11,7 +11,7 @@ To get the server running, open a terminal in the `server` folder, then type `np
 finished installing, type `npm start` to get the process running. From that point you will be able to access
 it in your browser at http://localhost:3000.
 
-To make the Rom connect to your server, you will need to change the URL in `world.c` to contain the IP of 
+To make the rom connect to your server, you will need to change the URL in `world.c` to contain the IP of 
 your computer. On startup, the server will list all addresses it knows it is listening on. One of these 
 should work - it will often be the one starting with 192.168.1. You will have to be connected to the same 
 router as your NES, unless you host this on the internet.

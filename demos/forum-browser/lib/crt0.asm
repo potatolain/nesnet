@@ -231,6 +231,7 @@ detectNTSC:
 
 	jmp _main			;no parameters
 
+	.include "lib/nesnet_config.asm"
 	.include "lib/neslib.asm"
 	.include "../../src/nesnet.asm"
 

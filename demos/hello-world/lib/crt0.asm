@@ -231,7 +231,8 @@ detectNTSC:
 	sta PPU_SCROLL
 
 	jmp _main			;no parameters
-
+	
+	.include "../../src/nesnet_config.asm"
 	.include "lib/neslib.asm"
 	.include "../../src/nesnet.asm"
 

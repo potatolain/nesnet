@@ -102,9 +102,11 @@ NES controller, connect the NES wires to the photon as follows:
 Using the library is pretty simple. If you're doing it from a C project, you'll need to make 3 main changes to set
 it up.
 
-1. In your bootstrap (crt0.asm) file, include src/nesnet_zp.asm in the zeropage section.
-2. In the same file, include src/nesnet.asm. This is the logic behind the header file below uses.
-3. Include nesnet.h in the .c file you want to make web requests in. 
+1. In your bootstrap (crt0.asm) file, include the configuration file for nesnet, src/nesnet_config.asm
+   You can use this file to customize NESNet's behavior slightly.
+2. In your bootstrap (crt0.asm) file, include src/nesnet_zp.asm in the zeropage section.
+3. In the same file, include src/nesnet.asm. This is the logic behind the header file below uses.
+4. Include nesnet.h in the .c file you want to make web requests in. 
 
 You will also need to set up the particle photon, and flash it with the custom nesnet firmware. Find it on the
 releases page. You can flash using `particle-cli`. Use the following steps:

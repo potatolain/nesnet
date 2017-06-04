@@ -633,7 +633,7 @@
 		jsr do_get_res_len
 		rts
 	@receive:
-		jsr get_response
+		jsr do_receive
 		rts
 	@after_methods:
 
@@ -691,6 +691,30 @@
 		lda #0
 		sta NET_REQUEST_IN_PROGRESS
 
+		rts
+
+	do_receive:
+		lda NET_CURRENT_STATE
+		pha
+		jsr get_response
+		pla 
+		pha
+		cmp NET_CURRENT_STATE
+		bne @doner
+		.if NESNET_BYTES_PER_CALL > 0
+			.repeat (NESNET_BYTES_PER_CALL-1)
+				.repeat 10
+					nop
+				.endrepeat
+				jsr get_response
+				pla
+				pha
+				cmp NET_CURRENT_STATE
+				bne @doner
+			.endrepeat
+		.endif
+		@doner:
+		pla
 		rts
 
 .endscope
