@@ -587,7 +587,6 @@
 		lda #0
 		sta NET_RESPONSE_CODE
 		inc NET_CURRENT_STATE
-		jsr get_pad_values ; Just trigger input so the pad stuff works.
 		rts
 	@handshake: 
 		jsr do_handshake

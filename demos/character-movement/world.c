@@ -122,13 +122,10 @@ void main(void) {
 		// Constantly run http gets to get latest position... waitCycle inserts a small delay
 		if (http_request_complete()) { 
 			if (waitCycle == REQUEST_DELAY && http_response_code() == 200) {
-				for (i = 0; i != 3; ++i) {
-					oam_spr(currentMessage[0]+(i%2), currentMessage[1]+(i>>1), TILE_INTERNET, 0, SPRITE_INTERNET+(i<<2));
-				}
-					oam_spr(currentMessage[0], currentMessage[1], TILE_INTERNET+animOffset, 3, SPRITE_INTERNET);
-					oam_spr(currentMessage[0]+8, currentMessage[1], TILE_INTERNET+animOffset+1, 3, SPRITE_INTERNET+4);
-					oam_spr(currentMessage[0], currentMessage[1]+8, TILE_INTERNET+animOffset+16, 3, SPRITE_INTERNET+8);
-					oam_spr(currentMessage[0]+8, currentMessage[1]+8, TILE_INTERNET+animOffset+17, 3, SPRITE_INTERNET+12);
+				oam_spr(currentMessage[0], currentMessage[1], TILE_INTERNET+animOffset, 3, SPRITE_INTERNET);
+				oam_spr(currentMessage[0]+8, currentMessage[1], TILE_INTERNET+animOffset+1, 3, SPRITE_INTERNET+4);
+				oam_spr(currentMessage[0], currentMessage[1]+8, TILE_INTERNET+animOffset+16, 3, SPRITE_INTERNET+8);
+				oam_spr(currentMessage[0]+8, currentMessage[1]+8, TILE_INTERNET+animOffset+17, 3, SPRITE_INTERNET+12);
 
 			}
 
