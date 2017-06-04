@@ -14,6 +14,7 @@
 .define OUTGOING_BIT_DELAY 100 ; How much delay do we put between each bit we send out in order to tell the fake "controller" 1/0?
 .define NESNET_RESPONSE_WAIT_TIME 255 ; How long do we wait for a response from the controller before giving up?
 
+; Character prefix for each request type. 
 .define HTTP_GET 		'G'
 .define HTTP_PUT 		'E'
 .define HTTP_POST		'A'
@@ -69,22 +70,20 @@
 ; Note: Since ca65 is kind of a pain, all exports are at the bottom. 
 ; If you really want to see what you can do though, the details should all be in nesnet.h :)
 
-; TODO: macros cannot be placed in scopes - find a way to make these not risk clashing with someone else's stuff
-; Maybe as simple as HttpLib_phy and HttpLib_ply, etc. Would be nice if there were a cleaner way though.
-.macro phx
+.macro nesnet_phx
 	sta NET_TEMP
 	txa
 	pha
 	lda NET_TEMP
 .endmacro
-.macro plx
+.macro nesnet_plx
 	sta NET_TEMP
 	pla
 	tax
 	lda NET_TEMP
 .endmacro
 
-.macro trigger_latch
+.macro nesnet_trigger_latch
 	lda #1
 	sta $4016
 	lda #0
@@ -248,19 +247,19 @@
 	send_byte_to_nes: 
 			sta _nesnet_buffer+19
 			ldx #0
-			@byte_loop: ; TODO: loop this 3 times, like we do in the other direction?
+			@byte_loop:
 
 				lda _nesnet_buffer+19
 				and byte_to_bit_lookup, x ; Get the bit we're looking for from a simple lookup table
 
 /* 2   */		cmp #0
 /* 2   */		beq @zero 			; Timing note: adds 1-2 if it jumps to zero.
-/* 12  */			trigger_latch ; Putting these right next to eachother makes it easier to determine what is/isn't a match.
-/* 12  */			trigger_latch
+/* 12  */			nesnet_trigger_latch ; Putting these right next to eachother makes it easier to determine what is/isn't a match.
+/* 12  */			nesnet_trigger_latch
 /* 3   */			jmp @after_data
 				@zero: 
 /* 1-2 */			; From branch
-/* 12 */			trigger_latch
+/* 12 */			nesnet_trigger_latch
 /* 2 */				nop
 /* 2 */				nop
 /* 2 */				nop
@@ -269,7 +268,7 @@
 /* 2 */				nop
 /* 3 */				jmp @after_data ; Keeping things in sync cycles-wise.
 				@after_data:
-				phx
+				nesnet_phx
 				ldx #0
 				@loop:
 					nop
@@ -298,7 +297,7 @@
 					@no_rot:
 					stx NET_P1_BUFFER_POS
 
-				plx
+				nesnet_plx
 				inx
 				cpx #8
 				bne @byte_loop
@@ -327,7 +326,7 @@
 		@do_latch:
 		; TODO: Make a real handshake so we stop triggering the stupid powerpak
 			.repeat 8
-				trigger_latch
+				nesnet_trigger_latch
 			.endrepeat
 			rts
 
@@ -363,7 +362,6 @@
 		lda HTTP_DATA_LENGTH
 		jsr send_byte_to_nes
 
-		; TODO: Do I mess up game timing at all if I send two bytes at once? I think this is ok?
 		lda HTTP_DATA_LENGTH+1
 		jsr send_byte_to_nes
 		inc NET_CURRENT_STATE
@@ -373,7 +371,6 @@
 
 		rts
 	do_send_data:
-		; FIXME: Implement me better-like
 		ldy NET_REQUEST_BYTE_NUM
 
 		lda (HTTP_DATA), y
@@ -456,7 +453,6 @@
 		rts
 
 	do_get_res_len:
-		; TODO: Is this too long for one nmi?
 		jsr get_pad_values
 		sta RESPONSE_LENGTH
 		jsr get_pad_values
@@ -752,7 +748,6 @@ get_pad_values:
 
 get_pad_values_no_retry: 
 	; Forcibly space out the latch requests a little to reduce the likelihood the photon will get a latch out of order
-	; TODO: Is this still needed after the async refactor?
 	txa
 	pha
 	tya

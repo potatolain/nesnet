@@ -15,5 +15,4 @@ NET_P1_BUFFER:				.res 3
 NET_P1_BUFFER_POS:			.res 1
 NET_RESPONSE_CODE: 			.res 2
 NET_CURRENT_STATE:			.res 1
-; TODO: Unused?
 NET_REQUEST_BYTE_NUM:		.res 2
