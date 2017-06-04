@@ -519,12 +519,12 @@
 		@connected:
 		; If a request is in progress, use the last known result
 
-			lda <NET_P1_BUFFER
-			cmp <NET_P1_BUFFER+1
+			lda NET_P1_BUFFER
+			cmp NET_P1_BUFFER+1
 			beq @done
-			cmp <NET_P1_BUFFER+2
+			cmp NET_P1_BUFFER+2
 			beq @done
-			lda <NET_P1_BUFFER+1
+			lda NET_P1_BUFFER+1
 		@done:
 
 		rts
