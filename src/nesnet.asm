@@ -703,7 +703,7 @@
 		bne @doner
 		.if NESNET_BYTES_PER_CALL > 0
 			.repeat (NESNET_BYTES_PER_CALL-1)
-				.repeat 10
+				.repeat 20
 					nop
 				.endrepeat
 				jsr get_response
