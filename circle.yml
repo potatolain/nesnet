@@ -11,7 +11,11 @@ dependencies:
     - mkdir -p demos/hello-world/tools/cc65/bin
     - find demos/hello-world/tools/cc65 -type f -executable -exec cp {} demos/hello-world/tools/cc65/bin/ \;
     - rm -rf demos/forum-browser/tools/cc65
+    - rm -rf demos/character-movement/tools/cc65
+    - rm -rf demos/all-request-types/tools/cc65
     - cd demos/forum-browser/tools && ln -s ../../hello-world/tools/cc65 cc65
+    - cd demos/all-request-types/tools && ln -s ../../hello-world/tools/cc65 cc65
+    - cd demos/character-movement/tools && ln -s ../../hello-world/tools/cc65 cc65
   override: 
     - echo No proper dep install beyond this
   cache_directories: 
@@ -20,6 +24,8 @@ compile:
   override: 
     - cd demos/hello-world && make
     - cd demos/forum-browser && make
+    - cd demos/all-request-types && make
+    - cd demos/character-movement && make
     - cd photon-firmware && make
 test: 
   override: 
@@ -27,4 +33,6 @@ test:
   post: 
     - cp demos/hello-world/hello.nes $CIRCLE_ARTIFACTS/hello.nes
     - cp demos/forum-browser/browser.nes $CIRCLE_ARTIFACTS/browser.nes
+    - cp demos/all-request-types/echo.nes $CIRCLE_ARTIFACTS/echo.nes
+    - cp demos/character-movement/world.nes $CIRCLE_ARTIFACTS/world.nes
     - cp photon-firmware/bin/photon_firmware.bin $CIRCLE_ARTIFACTS/photon_firmware.bin
