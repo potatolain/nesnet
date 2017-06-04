@@ -1,6 +1,8 @@
 #include "lib/neslib.h"
 #include "../../src/nesnet.h"
 
+// NOTE: You have to change the URL here to the URL of your PC. Check the output from the nodejs server on startup - it should
+// show the server address. Replace this with the address you want.
 #define POSITION_URL "http://192.168.1.201:3000/update"
 #define SPRITE_INTERNET 0x00
 #define SPRITE_PLAYER 0x10

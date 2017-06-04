@@ -41,7 +41,7 @@ static unsigned char musicIsPaused = 1;
 static unsigned char nesnetConnected = 0, nesnetConnectionAttempts = 0;
 static unsigned char hasHitColon = FALSE;
 static int resCode;
-static unsigned char hasGrabbedCount = 0, hasShownAuthor = 0, hasShownDate = 0;
+static unsigned char hasGrabbedCount = 0, hasShownAuthor = 0, hasShownDate = 0, hasHiddenConnectionText = 0;
 
 #pragma bssseg (push,"BSS")
 #pragma dataseg(push,"BSS")
@@ -148,6 +148,7 @@ void main(void) {
 
 	ppu_on_all();//enable rendering
 	callCount = i = 0;
+	hasHiddenConnectionText = 0;
 	ppu_wait_nmi();
 
 	music_play(0);
@@ -185,7 +186,16 @@ void do_init() {
 	ppu_wait_frame();
 	currentPadState = wrapped_pad_trigger();
 	if (nesnet_check_connected()) {
-		show_home();
+		if (!hasHiddenConnectionText) {
+			hasHiddenConnectionText = 1;
+			ppu_off();
+			put_str(NTADR_A(2,18), "NESNet Connected     ");
+			ppu_on_all();
+		}
+
+		if (currentPadState & PAD_A) {
+			show_home();
+		}
 	}
 
 	do_pause();
