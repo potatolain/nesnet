@@ -8,11 +8,11 @@ so please treat it that way. (Note: Don't let this dissuade you from filing bugs
 very quickly.)
 
 ### Latest CI Artifacts (master branch)
--  [Photon Firmware](https://circleci-tkn.rhcloud.com/api/v1/project/cppchriscpp/nesnet/tree/master/latest/artifacts/photon_firmware.bin)
--  [Basic Demo Rom](https://circleci-tkn.rhcloud.com/api/v1/project/cppchriscpp/nesnet/tree/master/latest/artifacts/hello.nes)
--  [Forum Browser Rom](https://circleci-tkn.rhcloud.com/api/v1/project/cppchriscpp/nesnet/tree/master/latest/artifacts/browser.nes)
--  [All Request Types](https://circleci-tkn.rhcloud.com/api/v1/project/cppchriscpp/nesnet/tree/master/latest/artifacts/echo.nes)
--  [Asynchronouse Demo](https://circleci-tkn.rhcloud.com/api/v1/project/cppchriscpp/nesnet/tree/master/latest/artifacts/world.nes)
+-  [Photon Firmware](http://cpprograms.net/devnull/circleci-redirect.php?namespace=cppchriscpp&project=nes-c-boilerplate&file=photon_firmware.bin)
+-  [Basic Demo Rom](http://cpprograms.net/devnull/circleci-redirect.php?namespace=cppchriscpp&project=nes-c-boilerplate&file=hello.nes)
+-  [Forum Browser Rom](http://cpprograms.net/devnull/circleci-redirect.php?namespace=cppchriscpp&project=nes-c-boilerplate&file=browser.nes)
+-  [All Request Types](http://cpprograms.net/devnull/circleci-redirect.php?namespace=cppchriscpp&project=nes-c-boilerplate&file=echo.nes)
+-  [Asynchronouse Demo](http://cpprograms.net/devnull/circleci-redirect.php?namespace=cppchriscpp&project=nes-c-boilerplate&file=world.nes)
 
 ## What is this?
 

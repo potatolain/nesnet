@@ -1,0 +1,52 @@
+version: 2
+jobs:
+  build:
+    docker:
+      - image: cppchriscpp/cc65-node:latest
+    steps:
+      - checkout
+      - add_ssh_keys:
+          fingerprints: 
+            - "62:d1:f8:4c:c4:bd:64:69:ca:6f:56:05:12:31:79:8d"
+      - run: 
+          name: Install cli
+          command: npm install -g particle-cli
+      - run:
+          name: Particle login
+          command: particle login $PARTICLE_USER $PARTICLE_PW
+      - run:
+          name: Remove unused tools folders
+          run: rm -rf demos/hello-world/tools/cc65 demos/forum-browser/tools/cc65 demos/character-movement/tools/cc65 demos/all-request-types/tools/cc65
+      - run:
+          name: Link tools folder to expected locations
+          command: ln -s demos/hello-world/tools/cc65 /tools/cc65 && ln -s demos/forum-browser/tools/cc65 /tools/cc65 && ln -s demos/all-request-types/tools/cc65 /tools/cc65 ln -s demos/character-movement/tools/cc65 /tools/cc65
+      - run:
+          name: Build Hello world
+          command: cd demos/hello-world && make
+      - run:
+          name: Build Forum Browser
+          command: cd demos/forum-browser && make
+      - run:
+          name: Build All Request Type demo
+          command: cd demos/all-request-types && make
+      - run:
+          name: Build Character Movement demo
+          command: cd demos/character-movement && make
+      - run:
+          name: Build Photon firmware
+          command: cd photon-firmware && make
+      - store_artifacts:
+          path: demos/hello-world/hello.nes
+      - store_artifacts:
+          path: demos/forum-browser/browser.nes
+      - store_artifacts:
+          path: demos/all-request-types/echo.nes
+      - store_artifacts:
+          path: demos/character-movement/world.nes
+      - store_artifacts:
+          path: photon-firmware/bin/photon_firmware.bin
+workflows:
+  version: 2
+  build:
+    jobs: 
+      - build
