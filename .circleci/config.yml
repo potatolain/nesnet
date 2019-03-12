@@ -10,10 +10,13 @@ jobs:
             - "62:d1:f8:4c:c4:bd:64:69:ca:6f:56:05:12:31:79:8d"
       - run: 
           name: Install cli
-          command: sudo npm install -g particle-cli
+          command: npm install particle-cli
+      - run:
+          name: whered that go
+          command: -ls -lar node_modules
       - run:
           name: Particle login
-          command: particle login $PARTICLE_USER $PARTICLE_PW
+          command: PATH=/root/project/node_modules/.bin:$PATH particle login $PARTICLE_USER $PARTICLE_PW
       - run:
           name: Remove unused tools folders
           command: rm -rf demos/hello-world/tools/cc65 demos/forum-browser/tools/cc65 demos/character-movement/tools/cc65 demos/all-request-types/tools/cc65
@@ -34,7 +37,7 @@ jobs:
           command: cd demos/character-movement && make
       - run:
           name: Build Photon firmware
-          command: cd photon-firmware && make
+          command: cd photon-firmware && PATH=/root/project/node_modules/.bin:$PATH make
       - store_artifacts:
           path: demos/hello-world/hello.nes
       - store_artifacts:
