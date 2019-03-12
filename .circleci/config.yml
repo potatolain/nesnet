@@ -13,7 +13,7 @@ jobs:
           command: npm install particle-cli
       - run:
           name: whered that go
-          command: -ls -lar node_modules
+          command: ls -lar node_modules
       - run:
           name: Particle login
           command: PATH=/root/project/node_modules/.bin:$PATH particle login $PARTICLE_USER $PARTICLE_PW
