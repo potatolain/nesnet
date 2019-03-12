@@ -10,7 +10,7 @@ jobs:
             - "62:d1:f8:4c:c4:bd:64:69:ca:6f:56:05:12:31:79:8d"
       - run: 
           name: Install cli
-          command: npm install -g particle-cli
+          command: sudo npm install -g particle-cli
       - run:
           name: Particle login
           command: particle login $PARTICLE_USER $PARTICLE_PW
