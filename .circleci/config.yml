@@ -16,7 +16,7 @@ jobs:
           command: ls -lar node_modules
       - run:
           name: Particle login
-          command: PATH=/root/project/node_modules/.bin:$PATH particle login --username $PARTICLE_USER --password $PARTICLE_PW
+          command: PATH=/root/project/node_modules/.bin:$PATH particle login --username $PARTICLE_USER --password "$PARTICLE_PW"
       - run:
           name: Remove unused tools folders
           command: rm -rf demos/hello-world/tools/cc65 demos/forum-browser/tools/cc65 demos/character-movement/tools/cc65 demos/all-request-types/tools/cc65
