@@ -22,7 +22,7 @@ jobs:
           command: rm -rf demos/hello-world/tools/cc65 demos/forum-browser/tools/cc65 demos/character-movement/tools/cc65 demos/all-request-types/tools/cc65
       - run:
           name: Link tools folder to expected locations
-          command: ln -s demos/hello-world/tools/cc65 /tools/cc65 && ln -s demos/forum-browser/tools/cc65 /tools/cc65 && ln -s demos/all-request-types/tools/cc65 /tools/cc65 ln -s demos/character-movement/tools/cc65 /tools/cc65
+          command: ln -s /tools/cc65 demos/hello-world/tools/cc65 && ln -s /tools/cc65 demos/forum-browser/tools/cc65 && ln -s /tools/cc65 demos/all-request-types/tools/cc65 ln -s /tools/cc65 demos/character-movement/tools/cc65
       - run:
           name: Build Hello world
           command: cd demos/hello-world && make
