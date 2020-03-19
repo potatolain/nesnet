@@ -2,6 +2,14 @@
 
 Ever want to make your NES go online? Now you can! All it takes is a little C knowledge and some time.
 
+## IMPORTANT NOTE
+
+This project is deprecated - there are much better solutions to this problem out there
+now. If you see "nesnet" it is likely in reference to a project by 
+[InfinteNesLives](https://twitter.com/infiniteneslive) - check him out instead.
+
+There's a prospect of real nice hardware with that proejct, too.
+
 **Important**: This project is very much a work in progress. While this should work for basic cases, it's not what
 I'd call production-ready code. Requests will sometimes fail, data may be wrong, etc. This is a hobbyist's toy, 
 so please treat it that way. (Note: Don't let this dissuade you from filing bugs, though! I just may not get to them
