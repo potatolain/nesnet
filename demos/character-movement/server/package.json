@@ -7,7 +7,6 @@
     "start": "node ./index.js",
     "test": "echo \"nope\""
   },
-  "author": "cppchriscpp (admin@cpprograms.net)",
   "license": "MIT",
   "dependencies": {
     "body-parser": "^1.17.2",

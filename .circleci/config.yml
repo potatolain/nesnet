@@ -2,7 +2,7 @@ version: 2
 jobs:
   build:
     docker:
-      - image: cppchriscpp/cc65-node:latest
+      - image: igwgames/cc65-node:latest
     steps:
       - checkout
       - add_ssh_keys:

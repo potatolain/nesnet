@@ -1,4 +1,4 @@
-# NESNET [![CircleCI](https://circleci.com/gh/cppchriscpp/nesnet.svg?style=svg)](https://circleci.com/gh/cppchriscpp/nesnet)
+# NESNET 
 
 Ever want to make your NES go online? Now you can! All it takes is a little C knowledge and some time.
 
@@ -15,12 +15,9 @@ I'd call production-ready code. Requests will sometimes fail, data may be wrong,
 so please treat it that way. (Note: Don't let this dissuade you from filing bugs, though! I just may not get to them
 very quickly.)
 
-### Latest CI Artifacts (master branch)
--  [Photon Firmware](http://cpprograms.net/devnull/circleci-redirect.php?namespace=cppchriscpp&project=nesnet&file=photon_firmware.bin)
--  [Basic Demo Rom](http://cpprograms.net/devnull/circleci-redirect.php?namespace=cppchriscpp&project=nesnet&file=hello.nes)
--  [Forum Browser Rom](http://cpprograms.net/devnull/circleci-redirect.php?namespace=cppchriscpp&project=nesnet&file=browser.nes)
--  [All Request Types](http://cpprograms.net/devnull/circleci-redirect.php?namespace=cppchriscpp&project=nesnet&file=echo.nes)
--  [Asynchronous Demo](http://cpprograms.net/devnull/circleci-redirect.php?namespace=cppchriscpp&project=nesnet&file=world.nes)
+### Latest Release
+
+https://gh.nes.science/nesnet/releases/tag/v0.0.5
 
 ## What is this?
 
@@ -31,8 +28,8 @@ A C library for http requests for the NES.
 Because I can, darnit! Why not?
 
 In seriousness, I saw the 
-[Twitter client](http://nobadmemories.com/connectednes/) that 
-[Rachel Weil](http://www.twitter.com/partytimehxlnt)
+[Twitter client](https://www.nobadmemories.com/connectednes/) that 
+[Rachel Weil](https://www.twitter.com/partytimehxlnt)
 made, and decided I wanted to take that a step further/crazier.
 
 ## What features of http does it support?
@@ -94,7 +91,7 @@ extension cord purchased online will do fine. You should be able to pick up both
 [Particle Photon](https://www.amazon.com/Particle-PHOTON-Comprehensive-Development-Access/dp/B016YNU1A0)
 
 You basically just need to build the 
-[hardware for ConnectedNES](http://nobadmemories.com/connectednes/).
+[hardware for ConnectedNES](https://www.nobadmemories.com/connectednes/).
 
 The pictures on that site should give a good indication of how you put this together. If you're using an original
 NES controller, connect the NES wires to the photon as follows:

@@ -83,7 +83,6 @@ void show_boilerplate() {
 
 	// Show some text we show pretty much everywhere.
 	put_str(NTADR_A(7,2),"NESNet Demo!");
-	put_str(NTADR_A(7,4), "By cppchriscpp");
 	put_str(NTADR_A(3,27), "Inspired by ConnectedNES");
 	put_str(NTADR_A(2,9),"Press A to get your public");
 	put_str(NTADR_A(2,10),"IP.");
